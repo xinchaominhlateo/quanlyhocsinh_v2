@@ -1,0 +1,4 @@
+.hover-bg-secondary:hover {
+    background-color: #495057 !important;
+    transform: translateX(5px);
+}
