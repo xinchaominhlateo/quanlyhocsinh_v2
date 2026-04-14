@@ -22,19 +22,49 @@ const LopHoc = () => {
 
   const handleChange = (e) => setFormDuLieu({ ...formDuLieu, [e.target.name]: e.target.value });
 
-  const handleLuu = (e) => {
+const handleLuu = (e) => {
     e.preventDefault();
-    const API_URL = idDangSua ? `http://localhost:8000/api/lophoc/${idDangSua}` : 'http://localhost:8000/api/lophoc';
-    const method = idDangSua ? axios.put : axios.post;
 
-    method(API_URL, formDuLieu)
-      .then(() => {
-        Swal.fire({ icon: 'success', title: 'Thành công!', timer: 1500, showConfirmButton: false });
-        layDanhSach();
-        resetForm();
-      }).catch(err => Swal.fire('Lỗi', 'Có lỗi xảy ra, xem console!', 'error'));
+    if (idDangSua) {
+      // SỬA LỚP HỌC
+      axios.put(`http://localhost:8000/api/lophoc/${idDangSua}`, formDuLieu)
+        .then(() => {
+          Swal.fire({ icon: 'success', title: 'Thành công!', text: 'Đã cập nhật lớp học.', timer: 1500, showConfirmButton: false });
+          layDanhSach();
+          resetForm();
+        })
+        .catch(error => {
+          console.error("Chi tiết lỗi:", error);
+          let thongBao = 'Có lỗi xảy ra, không lưu được!';
+          if (error.response?.data?.message) {
+            thongBao = error.response.data.message;
+            if (thongBao.includes("Integrity constraint violation") && thongBao.includes("Duplicate entry")) {
+                thongBao = "Mã lớp này đã tồn tại trong hệ thống. Vui lòng đổi mã khác!";
+            }
+          }
+          Swal.fire({ icon: 'error', title: 'Cập nhật thất bại!', text: thongBao });
+        });
+    } else {
+      // THÊM MỚI LỚP HỌC
+      axios.post('http://localhost:8000/api/lophoc', formDuLieu)
+        .then(() => {
+          Swal.fire({ icon: 'success', title: 'Tuyệt vời!', text: 'Đã thêm lớp mới.', timer: 1500, showConfirmButton: false });
+          layDanhSach();
+          resetForm();
+        })
+        .catch(error => {
+          console.error("Chi tiết lỗi:", error);
+          let thongBao = 'Có lỗi xảy ra, không lưu được!';
+          if (error.response?.data?.message) {
+            thongBao = error.response.data.message;
+            if (thongBao.includes("Integrity constraint violation") && thongBao.includes("Duplicate entry")) {
+                thongBao = "Mã lớp này đã tồn tại trong hệ thống. Vui lòng đổi mã khác!";
+            }
+          }
+          Swal.fire({ icon: 'error', title: 'Thêm thất bại!', text: thongBao });
+        });
+    }
   };
-
   const handleChonSua = (lop) => {
     setIdDangSua(lop.id);
     setFormDuLieu({ ma_lop: lop.ma_lop, ten_lop: lop.ten_lop, khoi: lop.khoi });

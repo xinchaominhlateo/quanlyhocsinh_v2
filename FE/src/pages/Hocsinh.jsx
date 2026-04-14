@@ -35,26 +35,41 @@ const HocSinh = () => {
 
   const handleChange = (e) => setFormDuLieu({ ...formDuLieu, [e.target.name]: e.target.value })
 
-  const handleLuu = (e) => {
-    e.preventDefault()
+const handleLuu = (e) => {
+    e.preventDefault();
+    
+    // Đã tháo cái bẫy alert("Test...") ra rồi nhé!
+    // console.log("Chuẩn bị gửi:", formDuLieu); // Ông thích thì cứ để, không thì xóa
+
     if (idDangSua) {
+      // 📝 CODE DÀNH CHO CẬP NHẬT (PUT)
       axios.put(`http://localhost:8000/api/hocsinh/${idDangSua}`, formDuLieu)
         .then(() => {
           Swal.fire({ icon: 'success', title: 'Thành công!', text: 'Đã cập nhật thông tin.', timer: 1500, showConfirmButton: false })
           layDanhSach()
           resetForm()
-        }).catch(error => console.error(error))
+        })
+        .catch(error => {
+          console.error("Lỗi Sửa API:", error);
+          const thongBaoLoi = error.response?.data?.message || 'Lỗi hệ thống hoặc sai đường dẫn API!';
+          Swal.fire({ icon: 'error', title: 'Sửa thất bại!', text: thongBaoLoi });
+        })
     } else {
+      // ➕ CODE DÀNH CHO THÊM MỚI (POST)
       axios.post('http://localhost:8000/api/hocsinh', formDuLieu)
         .then(() => {
           Swal.fire({ icon: 'success', title: 'Tuyệt vời!', text: 'Đã thêm học sinh mới.', timer: 1500, showConfirmButton: false })
           layDanhSach()
           resetForm()
-        }).catch(error => console.error(error))
+        })
+        .catch(error => {
+          console.error("Lỗi Thêm Mới API:", error);
+          const thongBaoLoi = error.response?.data?.message || 'Có vẻ backend Laravel đang phàn nàn gì đó!';
+          Swal.fire({ icon: 'error', title: 'Thêm thất bại!', text: thongBaoLoi });
+        })
     }
   }
-
-  const handleChonSua = (hs) => {
+    const handleChonSua = (hs) => {
     setIdDangSua(hs.id)
     setFormDuLieu({ 
       ho_ten: hs.ho_ten, 
@@ -105,7 +120,7 @@ const HocSinh = () => {
     Swal.fire({ icon: 'success', title: 'Đã tải xong!', text: 'File báo cáo Excel đã nằm trong máy của m.', timer: 2000, showConfirmButton: false });
   }
 
-  const danhSachDaLoc = danhSachHocSinh.filter((hs) => hs.ho_ten.toLowerCase().includes(tuKhoa.toLowerCase()))
+  const danhSachDaLoc = danhSachHocSinh.filter((hs) => hs.ho_ten?.toLowerCase().includes(tuKhoa.toLowerCase()))
   const viTriCuoi = trangHienTai * soLuongMotTrang
   const viTriDau = viTriCuoi - soLuongMotTrang
   const danhSachHienThi = danhSachDaLoc.slice(viTriDau, viTriCuoi)
@@ -162,15 +177,15 @@ const HocSinh = () => {
             {idDangSua ? '✏️ Cập Nhật Thông Tin' : '📝 Nhập Thông Tin Mới'}
           </div>
           <div className="card-body">
-            <form onSubmit={handleLuu}>
+            <form >
               <div className="row">
                 <div className="col-md-4 mb-3">
                   <label className="form-label fw-bold">Họ Tên</label>
-                  <input type="text" className="form-control" name="ho_ten" value={formDuLieu.ho_ten} onChange={handleChange} required />
+                  <input type="text" className="form-control" name="ho_ten" value={formDuLieu.ho_ten} onChange={handleChange} />
                 </div>
                 <div className="col-md-4 mb-3">
                   <label className="form-label fw-bold">Ngày Sinh</label>
-                  <input type="date" className="form-control" name="ngay_sinh" value={formDuLieu.ngay_sinh} onChange={handleChange} required />
+                  <input type="date" className="form-control" name="ngay_sinh" value={formDuLieu.ngay_sinh} onChange={handleChange} />
                 </div>
                 <div className="col-md-4 mb-3">
                   <label className="form-label fw-bold">Giới Tính</label>
@@ -183,7 +198,7 @@ const HocSinh = () => {
                 {/* 4. CHỖ LẮP THỨ 4: Khung chọn Lớp Học */}
                 <div className="col-md-6 mb-3">
                   <label className="form-label fw-bold text-danger">Thuộc Lớp Học</label>
-                  <select className="form-select border-danger" name="lop_hoc_id" value={formDuLieu.lop_hoc_id} onChange={handleChange} required>
+                  <select className="form-select border-danger" name="lop_hoc_id" value={formDuLieu.lop_hoc_id} onChange={handleChange} >
                     <option value="">-- Chọn Lớp cho Học sinh --</option>
                     {danhSachLop.map(lop => (
                       <option key={lop.id} value={lop.id}>{lop.ten_lop} (Khối {lop.khoi})</option>
@@ -193,10 +208,10 @@ const HocSinh = () => {
 
                 <div className="col-md-6 mb-3">
                   <label className="form-label fw-bold">Địa Chỉ</label>
-                  <input type="text" className="form-control" name="dia_chi" value={formDuLieu.dia_chi} onChange={handleChange} required />
+                  <input type="text" className="form-control" name="dia_chi" value={formDuLieu.dia_chi} onChange={handleChange}  />
                 </div>
               </div>
-              <button type="submit" className={`btn fw-bold px-4 btn-${idDangSua ? 'warning' : 'primary'}`}>
+              <button type="button" onClick={handleLuu} className={`btn fw-bold px-4 btn-${idDangSua ? 'warning' : 'primary'}`}>
                 {idDangSua ? '💾 Cập Nhật' : '💾 Lưu Dữ Liệu'}
               </button>
             </form>
