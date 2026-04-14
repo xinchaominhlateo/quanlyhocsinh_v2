@@ -16,7 +16,7 @@ class HocSinhController extends Controller
 
     public function store(Request $request) 
     {
-        return response()->json($request->all());
+       
         // 1. Nhận toàn bộ dữ liệu từ React gửi sang và lưu thẳng vào Database
         $hocSinhMoi = HocSinh::create($request->all());
 
