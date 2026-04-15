@@ -9,61 +9,62 @@ use Illuminate\Http\Request;
 class HocPhiController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Lấy danh sách phiếu thu
      */
     public function index()
     {
-        return response()->json(['status' => 'success', 'data' => \App\Models\HocPhi::with('hocSinh')->get()]);
+        return response()->json(['status' => 'success', 'data' => HocPhi::with('hocSinh')->get()]);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Tạo phiếu thu mới
      */
     public function store(Request $request)
     {
-        $hp = \App\Models\HocPhi::create($request->all());
-    return response()->json(['status' => 'success', 'data' => $hp]);
+        $hp = HocPhi::create($request->all());
+        return response()->json(['status' => 'success', 'data' => $hp]);
     }
 
     /**
-     * Display the specified resource.
+     * Xem chi tiết 1 phiếu (Sửa thành $id)
      */
-    public function show(HocPhi $hocPhi)
+    public function show($id)
     {
-        // Tìm học phí theo ID và lấy luôn thông tin học sinh đi kèm
-    $hocPhi = \App\Models\HocPhi::with('hocSinh')->find($id);
+        $hocPhi = HocPhi::with('hocSinh')->find($id);
 
-    // Nếu không tìm thấy thì báo lỗi 404
-    if (!$hocPhi) {
+        if (!$hocPhi) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Không tìm thấy thông tin học phí này!'
+            ], 404);
+        }
+
         return response()->json([
-            'status' => 'error',
-            'message' => 'Không tìm thấy thông tin học phí này!'
-        ], 404);
-    }
-
-    // Nếu thấy thì trả về dữ liệu
-    return response()->json([
-        'status' => 'success', 
-        'data' => $hocPhi
-    ]);
+            'status' => 'success', 
+            'data' => $hocPhi
+        ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Cập nhật phiếu thu - Nút THU TIỀN gọi hàm này (Sửa thành $id)
      */
-    public function update(Request $request, HocPhi $hocPhi)
+    public function update(Request $request, $id)
     {
-        $hp = \App\Models\HocPhi::find($id);
-    $hp->update($request->all());
-    return response()->json(['status' => 'success']);
+        $hp = HocPhi::find($id);
+        
+        if ($hp) {
+            $hp->update($request->all());
+        }
+        
+        return response()->json(['status' => 'success']);
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Xóa phiếu thu - Nút XÓA gọi hàm này (Sửa thành $id)
      */
-    public function destroy(HocPhi $hocPhi)
+    public function destroy($id)
     {
-        \App\Models\HocPhi::destroy($id);
-    return response()->json(['status' => 'success']);
+        HocPhi::destroy($id);
+        return response()->json(['status' => 'success']);
     }
-}
+}   

@@ -13,7 +13,7 @@ const MonHoc = () => {
   useEffect(() => { layDanhSach() }, []);
 
   const layDanhSach = () => {
-    axios.get('http://localhost:8000/api/monhoc')
+    axios.get('/monhoc')
       .then(res => setDanhSachMon(res.data.data))
       .catch(err => console.error(err));
   };
@@ -22,7 +22,7 @@ const MonHoc = () => {
 
   const handleLuu = (e) => {
     e.preventDefault();
-    const API_URL = idDangSua ? `http://localhost:8000/api/monhoc/${idDangSua}` : 'http://localhost:8000/api/monhoc';
+    const API_URL = idDangSua ? `/monhoc/${idDangSua}` : '/monhoc';
     const method = idDangSua ? axios.put : axios.post;
 
     method(API_URL, formDuLieu)
@@ -48,7 +48,7 @@ const MonHoc = () => {
       title: 'Xóa môn này?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Xóa!'
     }).then((result) => {
       if (result.isConfirmed) {
-        axios.delete(`http://localhost:8000/api/monhoc/${id}`).then(() => { layDanhSach(); Swal.fire('Đã xóa!', '', 'success') });
+        axios.delete(`/monhoc/${id}`).then(() => { layDanhSach(); Swal.fire('Đã xóa!', '', 'success') });
       }
     });
   };

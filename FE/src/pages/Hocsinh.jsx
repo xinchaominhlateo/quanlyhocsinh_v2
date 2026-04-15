@@ -22,13 +22,13 @@ const HocSinh = () => {
   // 3. CHỖ LẮP THỨ 3: Gọi API lấy cả danh sách học sinh LẪN danh sách lớp
   useEffect(() => { 
     layDanhSach();
-    axios.get('http://localhost:8000/api/lophoc')
+    axios.get('/lophoc')
       .then(res => setDanhSachLop(res.data.data))
       .catch(err => console.error("Chưa lấy được Lớp:", err));
   }, []);
 
   const layDanhSach = () => {
-    axios.get('http://localhost:8000/api/hocsinh')
+    axios.get('/hocsinh')
       .then(response => setDanhSachHocSinh(response.data.data))
       .catch(error => console.error(error))
   }
@@ -43,7 +43,7 @@ const handleLuu = (e) => {
 
     if (idDangSua) {
       // 📝 CODE DÀNH CHO CẬP NHẬT (PUT)
-      axios.put(`http://localhost:8000/api/hocsinh/${idDangSua}`, formDuLieu)
+      axios.put(`/hocsinh/${idDangSua}`, formDuLieu)
         .then(() => {
           Swal.fire({ icon: 'success', title: 'Thành công!', text: 'Đã cập nhật thông tin.', timer: 1500, showConfirmButton: false })
           layDanhSach()
@@ -56,7 +56,7 @@ const handleLuu = (e) => {
         })
     } else {
       // ➕ CODE DÀNH CHO THÊM MỚI (POST)
-      axios.post('http://localhost:8000/api/hocsinh', formDuLieu)
+      axios.post('/hocsinh', formDuLieu)
         .then(() => {
           Swal.fire({ icon: 'success', title: 'Tuyệt vời!', text: 'Đã thêm học sinh mới.', timer: 1500, showConfirmButton: false })
           layDanhSach()
@@ -93,7 +93,7 @@ const handleLuu = (e) => {
       showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Xóa!', cancelButtonText: 'Hủy'
     }).then((result) => {
       if (result.isConfirmed) {
-        axios.delete(`http://localhost:8000/api/hocsinh/${id}`)
+        axios.delete(`/hocsinh/${id}`)
           .then(() => {
             Swal.fire('Đã xóa!', 'Học sinh này đã ra đi.', 'success')
             layDanhSach()

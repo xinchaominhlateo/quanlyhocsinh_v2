@@ -13,20 +13,20 @@ const HanhKiem = () => {
   }, []);
 
   const layDuLieu = () => {
-    axios.get('http://localhost:8000/api/hanhkiem').then(res => setDanhSachHK(res.data.data));
-    axios.get('http://localhost:8000/api/hocsinh').then(res => setDanhSachHS(res.data.data));
+    axios.get('/hanhkiem').then(res => setDanhSachHK(res.data.data));
+    axios.get('/hocsinh').then(res => setDanhSachHS(res.data.data));
   };
 
   const handleLuu = (e) => {
     e.preventDefault();
-    axios.post('http://localhost:8000/api/hanhkiem', form).then(() => {
+    axios.post('/hanhkiem', form).then(() => {
       Swal.fire('Thành công', 'Đã lưu hạnh kiểm', 'success');
       layDuLieu(); setHienThiForm(false);
     });
   };
 
   const handleXoa = (id) => {
-    axios.delete(`http://localhost:8000/api/hanhkiem/${id}`).then(() => layDuLieu());
+    axios.delete(`/hanhkiem/${id}`).then(() => layDuLieu());
   };
 
   return (

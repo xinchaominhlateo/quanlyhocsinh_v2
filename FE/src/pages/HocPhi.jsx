@@ -1,31 +1,50 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { useReactToPrint } from 'react-to-print';
+import { MauInHocPhi } from '../components/MauInHocPhi';
 
 const HocPhi = () => {
   const [danhSachHP, setDanhSachHP] = useState([]);
   const [danhSachHS, setDanhSachHS] = useState([]);
   const [form, setForm] = useState({ hoc_sinh_id: '', hoc_ki: '', so_tien: '', trang_thai: 'Chưa đóng' });
 
+  // 👇 1. KHAI BÁO BIẾN CHO CHỨC NĂNG IN
+  const componentRef = useRef();
+  const [duLieuIn, setDuLieuIn] = useState(null);
+
   useEffect(() => { layDuLieu(); }, []);
 
   const layDuLieu = () => {
-    axios.get('http://localhost:8000/api/hocphi').then(res => setDanhSachHP(res.data.data));
-    axios.get('http://localhost:8000/api/hocsinh').then(res => setDanhSachHS(res.data.data));
+    axios.get('/hocphi').then(res => setDanhSachHP(res.data.data));
+    axios.get('/hocsinh').then(res => setDanhSachHS(res.data.data));
   };
 
   const handleLuu = (e) => {
     e.preventDefault();
-    axios.post('http://localhost:8000/api/hocphi', form).then(() => {
+    axios.post('/hocphi', form).then(() => {
       Swal.fire('Thành công', 'Đã thêm phiếu thu!', 'success');
       layDuLieu();
     });
   };
 
   const handleXacNhanDong = (id) => {
-    axios.put(`http://localhost:8000/api/hocphi/${id}`, { trang_thai: 'Đã đóng', ngay_dong: new Date().toISOString().split('T')[0] })
+    axios.put(`/hocphi/${id}`, { trang_thai: 'Đã đóng', ngay_dong: new Date().toISOString().split('T')[0] })
       .then(() => { layDuLieu(); Swal.fire('Xong!', 'Đã cập nhật trạng thái đóng tiền', 'success'); });
   };
+
+  // 👇 2. LOGIC XỬ LÝ LỆNH IN
+const handlePrint = useReactToPrint({
+  contentRef: componentRef, // Dùng contentRef thay vì content
+});
+
+const bamNutIn = (hp) => {
+  setDuLieuIn(hp);
+  // Đợi 300ms để React kịp đổ dữ liệu vào cái mẫu in rồi mới lệnh cho máy in chạy
+  setTimeout(() => {
+    handlePrint();
+  }, 300);
+};c
 
   return (
     <div className="container-fluid">
@@ -42,9 +61,19 @@ const HocPhi = () => {
               </select>
             </div>
             <div className="col-md-3 mb-3">
-              <label>Học Kỳ</label>
-              <input type="text" className="form-control" placeholder="Ví dụ: HK1 - 2026" onChange={e => setForm({...form, hoc_ki: e.target.value})} required />
-            </div>
+<label>Học Kỳ</label>
+  {/* Đổi từ thẻ <input> sang thẻ <select> để xổ danh sách */}
+  <select 
+    className="form-select" 
+    value={form.hoc_ki}
+    onChange={e => setForm({...form, hoc_ki: e.target.value})} 
+    required
+  >
+    <option value="">-- Chọn học kỳ --</option>
+    <option value="Học kỳ 1">Học kỳ 1</option>
+    <option value="Học kỳ 2">Học kỳ 2</option>
+    <option value="Học kỳ Hè">Học kỳ Hè</option>
+  </select>            </div>
             <div className="col-md-3 mb-3">
               <label>Số Tiền (VNĐ)</label>
               <input type="number" className="form-control" onChange={e => setForm({...form, so_tien: e.target.value})} required />
@@ -82,8 +111,16 @@ const HocPhi = () => {
                   {hp.trang_thai === 'Chưa đóng' && (
                     <button className="btn btn-sm btn-outline-success me-2" onClick={() => handleXacNhanDong(hp.id)}>Thu Tiền</button>
                   )}
+                  
+                  {/* 👇 3. NÚT IN CHỈ HIỆN KHI ĐÃ ĐÓNG TIỀN 👇 */}
+                  {hp.trang_thai === 'Đã đóng' && (
+                    <button className="btn btn-sm btn-outline-primary me-2" onClick={() => bamNutIn(hp)}>
+                      🖨️ In Biên Lai
+                    </button>
+                  )}
+
                   <button className="btn btn-sm btn-link text-danger" onClick={() => {
-                    axios.delete(`http://localhost:8000/api/hocphi/${hp.id}`).then(() => layDuLieu());
+                    axios.delete(`/hocphi/${hp.id}`).then(() => layDuLieu());
                   }}>Xóa</button>
                 </td>
               </tr>
@@ -91,6 +128,11 @@ const HocPhi = () => {
           </tbody>
         </table>
       </div>
+
+{/* Thay display: none bằng cách ẩn chuyên nghiệp hơn */}
+<div style={{ position: "absolute", top: "-9999px", left: "-9999px" }}>
+  <MauInHocPhi ref={componentRef} data={duLieuIn} />
+</div>
     </div>
   );
 };

@@ -1,50 +1,62 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Sidebar from './components/Sidebar';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 
-// MỚI: Import trang Học Sinh thật vào đây!
-
-import HocSinh from './pages/HocSinh'; 
+// Import giao diện
+import Sidebar from './components/sidebar';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import HocSinh from './pages/Hocsinh';
 import LopHoc from './pages/LopHoc';
 import MonHoc from './pages/MonHoc';
 import DiemSo from './pages/DiemSo';
 import HanhKiem from './pages/HanhKiem';
 import HocPhi from './pages/HocPhi';
-// XÓA cái dòng const HocSinh = () => ... cũ đi nhé. 
-// Chỉ giữ lại 2 dòng dưới đây:
-const TrangChu = () => <h2 className="text-primary fw-bold">🏠 Đây là Bảng Điều Khiển (Dashboard)</h2>;
-const DangPhatTrien = () => <h2 className="text-muted fw-bold">🚧 Chức năng này Tèo đang xây dựng, quay lại sau nhé...</h2>;
-
+import GiaoVien from './pages/GiaoVien'; // Nhớ có trang Giáo viên nhé
+import PhanCong from './pages/PhanCong';
 function App() {
-  // ... (Phần return ở dưới m Giữ nguyên y xì đúc không đổi gì hết) ...
-  return (
-    // Bọc toàn bộ app trong BrowserRouter để kích hoạt phép thuật chuyển trang
-    <BrowserRouter>
-      <div className="d-flex bg-light min-vh-100">
-        
-        {/* Lắp cái Thanh Menu bên trái vào đây */}
-        <Sidebar />
+  // Trạng thái kiểm tra xem đã đăng nhập chưa
+  const [isAuth, setIsAuth] = useState(false);
 
-        {/* Khu vực nội dung bên phải (Phải cách mép trái 250px vì cái Menu nó chiếm chỗ rồi) */}
-        <div className="flex-grow-1 p-4" style={{ marginLeft: '250px' }}>
-          
-          {/* Routes: Chỗ này sẽ tự động thay đổi ruột tùy theo đường link m bấm */}
+  // Khi vừa mở web lên, tìm xem trong két sắt có vé (token) chưa
+// Nối vào trong useEffect của App.jsx
+  useEffect(() => {
+    // 1. Cấu hình lại toàn bộ Axios dùng chung 1 cái gốc URL này
+    axios.defaults.baseURL = import.meta.env.VITE_API_URL;
+
+    // 2. Kiểm tra Token (Code cũ của m)
+    const token = localStorage.getItem('token');
+    if (token) {
+      setIsAuth(true); 
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    }
+  }, []);
+  // NẾU CHƯA ĐĂNG NHẬP -> CHỈ HIỆN ĐÚNG MÀN HÌNH LOGIN
+  if (!isAuth) {
+    return <Login setAuth={setIsAuth} />;
+  }
+
+  // NẾU ĐÃ ĐĂNG NHẬP -> HIỆN BỘ KHUNG GIAO DIỆN
+  return (
+    <Router>
+      <div className="d-flex">
+        <Sidebar setAuth={setIsAuth} /> {/* Truyền setAuth vào Sidebar để lát làm nút Đăng Xuất */}
+        <div className="content p-4 w-100">
           <Routes>
-            <Route path="/" element={<TrangChu />} />
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/hoc-sinh" element={<HocSinh />} />
-            
-            {/* Các chức năng khác tạm thời trỏ về trang "Đang xây dựng" */}
-            <Route path="/giao-vien" element={<DangPhatTrien />} />
-           <Route path="/lop-hoc" element={<LopHoc />} />
+            <Route path="/giao-vien" element={<GiaoVien />} />
+            <Route path="/lop-hoc" element={<LopHoc />} />
             <Route path="/mon-hoc" element={<MonHoc />} />
             <Route path="/diem-so" element={<DiemSo />} />
             <Route path="/hanh-kiem" element={<HanhKiem />} />
             <Route path="/hoc-phi" element={<HocPhi />} />
-            <Route path="/tai-khoan" element={<DangPhatTrien />} />
+            <Route path="/phan-cong" element={<PhanCong />} />
           </Routes>
-
         </div>
       </div>
-    </BrowserRouter>
+    </Router>
   );
 }
 

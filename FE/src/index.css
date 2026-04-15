@@ -1,4 +1,27 @@
+/* Tèo copy đoạn này dán vào cuối file index.css là bao đẹp */
+
+/* 1. Hiệu ứng Hover cho các mục Menu */
+.sidebar-hover-item:hover, 
 .hover-bg-secondary:hover {
-    background-color: #495057 !important;
-    transform: translateX(5px);
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: #ffc107 !important; /* Chữ biến thành màu vàng */
+    transform: translateX(8px); /* Nhảy nhẹ sang phải */
+    transition: all 0.3s ease;
+}
+
+/* 2. Cố định lề cho nội dung chính */
+.content {
+    margin-left: 250px; 
+    width: calc(100% - 250px);
+    background-color: #f8f9fa; /* Màu nền xám nhạt cho chuyên nghiệp */
+    min-height: 100vh;
+}
+
+/* 3. Tùy chỉnh thanh cuộn của Sidebar nếu menu quá dài */
+.vh-100::-webkit-scrollbar {
+    width: 5px;
+}
+.vh-100::-webkit-scrollbar-thumb {
+    background: #495057;
+    border-radius: 10px;
 }

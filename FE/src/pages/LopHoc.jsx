@@ -15,7 +15,7 @@ const LopHoc = () => {
   useEffect(() => { layDanhSach() }, []);
 
   const layDanhSach = () => {
-    axios.get('http://localhost:8000/api/lophoc')
+    axios.get('/lophoc')
       .then(res => setDanhSachLop(res.data.data))
       .catch(err => console.error(err));
   };
@@ -27,7 +27,7 @@ const handleLuu = (e) => {
 
     if (idDangSua) {
       // SỬA LỚP HỌC
-      axios.put(`http://localhost:8000/api/lophoc/${idDangSua}`, formDuLieu)
+      axios.put(`/lophoc/${idDangSua}`, formDuLieu)
         .then(() => {
           Swal.fire({ icon: 'success', title: 'Thành công!', text: 'Đã cập nhật lớp học.', timer: 1500, showConfirmButton: false });
           layDanhSach();
@@ -46,7 +46,7 @@ const handleLuu = (e) => {
         });
     } else {
       // THÊM MỚI LỚP HỌC
-      axios.post('http://localhost:8000/api/lophoc', formDuLieu)
+      axios.post('/lophoc', formDuLieu)
         .then(() => {
           Swal.fire({ icon: 'success', title: 'Tuyệt vời!', text: 'Đã thêm lớp mới.', timer: 1500, showConfirmButton: false });
           layDanhSach();
@@ -83,7 +83,7 @@ const handleLuu = (e) => {
       showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Xóa!'
     }).then((result) => {
       if (result.isConfirmed) {
-        axios.delete(`http://localhost:8000/api/lophoc/${id}`)
+        axios.delete(`/lophoc/${id}`)
           .then(() => { layDanhSach(); Swal.fire('Đã xóa!', '', 'success') });
       }
     });

@@ -11,4 +11,8 @@ class LopHoc extends Model
     public function hocSinhs() {
     return $this->hasMany(HocSinh::class, 'lop_hoc_id');
 }
+// Một lớp học có nhiều giáo viên
+    public function giaoViens() {
+        return $this->belongsToMany(GiaoVien::class, 'giao_vien_lop_hoc');
+    }
 }

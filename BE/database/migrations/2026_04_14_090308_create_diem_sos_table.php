@@ -9,30 +9,28 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+public function up(): void
     {
         Schema::create('diem_sos', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('hoc_sinh_id');
+            $table->unsignedBigInteger('mon_hoc_id');
             
-            // 2 sợi dây xích nối với Học Sinh và Môn Học
-     // 1. Dây xích nối với Học Sinh (Ép về kiểu INT cho khớp với bảng cũ m tự tạo)
-$table->integer('hoc_sinh_id');
-            $table->integer('mon_hoc_id');
-            
-            $table->integer('hoc_ki'); // Học kì 1 hoặc 2
-            
-            // Các cột điểm
-            $table->float('diem_tx')->nullable(); // Thường xuyên
-            $table->float('diem_gk')->nullable(); // Giữa kì
-            $table->float('diem_ck')->nullable(); // Cuối kì
-            $table->float('diem_tb')->nullable(); // Trung bình (Tự tính)
-            
-            $table->string('nhan_xet')->nullable();
+            // 👇 THÊM ĐẦY ĐỦ CÁC CỘT ĐIỂM VÀO ĐÂY (Kiểu float để chứa số thập phân) 👇
+            $table->float('diem_mieng')->nullable();
+            $table->float('diem_15_phut')->nullable();
+            $table->float('diem_1_tiet')->nullable();
+            $table->float('diem_thi')->nullable();
+            $table->float('diem_trung_binh')->nullable();
+            $table->string('xep_loai')->nullable();
             
             $table->timestamps();
+
+            // Khóa ngoại liên kết
+            $table->foreign('hoc_sinh_id')->references('id')->on('hoc_sinhs')->onDelete('cascade');
+            $table->foreign('mon_hoc_id')->references('id')->on('mon_hocs')->onDelete('cascade');
         });
     }
-
     /**
      * Reverse the migrations.
      */
