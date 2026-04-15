@@ -9,9 +9,6 @@
 
 ---
 
-## 🚀 Hướng dẫn cài đặt và chạy dự án (Local)
-
-Để chạy được dự án này trên máy của bạn, hãy đảm bảo máy đã cài đặt sẵn **XAMPP**, **Composer** và **Node.js**.
 ## 🛠️ Hướng dẫn cài đặt chi tiết công cụ hỗ trợ
 
 Nếu máy bạn chưa có sẵn môi trường để chạy Laravel và React, hãy cài đặt theo hướng dẫn dưới đây:
@@ -33,26 +30,13 @@ Nếu máy bạn chưa có sẵn môi trường để chạy Laravel và React, 
 ## 🚀 Các bước khởi chạy dự án (Sau khi đã có công cụ)
 
 ### Bước 1: Thiết lập Database
-1. Mở XAMPP Control Panel, nhấn **Start** cho cả Apache và MySQL.
+1. Mở XAMPP Control Panel, nhấn **Start** cho cả **Apache** và **MySQL**.
 2. Vào trình duyệt, mở: `http://localhost/phpmyadmin`.
 3. Tạo database mới tên là: `quanlyhocsinh_v2`.
-4. Chọn database vừa tạo -> Chọn tab **Import** -> Chọn file `database.sql` (trong thư mục `BE`) -> Nhấn **Go**.
+4. Chọn database vừa tạo -> Chọn tab **Import** -> Chọn file `quanlyhocsinh_v2.sql` (trong thư mục `BE`) -> Nhấn **Go**.
 
 ### Bước 2: Chạy Backend (Laravel)
-Mở Terminal tại thư mục `BE`:
-```bash
-composer install
-copy .env.example .env
-php artisan key:generate
-php artisan serve
-### 1. Cấu hình Database
-1. Mở XAMPP, bật Apache và MySQL.
-2. Truy cập `http://localhost/phpmyadmin` và tạo một database mới tên là `quanlyhocsinh_v2`.
-3. Import file `database.sql` (nằm trong thư mục `BE`) vào database vừa tạo.
-
-### 2. Khởi chạy Backend (Laravel)
-Mở Terminal, di chuyển vào thư mục `BE` và chạy các lệnh sau:
-
+Mở Terminal, di chuyển vào thư mục gốc và chạy các lệnh sau:
 ```bash
 cd BE
 composer install
