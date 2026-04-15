@@ -12,7 +12,39 @@
 ## 🚀 Hướng dẫn cài đặt và chạy dự án (Local)
 
 Để chạy được dự án này trên máy của bạn, hãy đảm bảo máy đã cài đặt sẵn **XAMPP**, **Composer** và **Node.js**.
+## 🛠️ Hướng dẫn cài đặt chi tiết công cụ hỗ trợ
 
+Nếu máy bạn chưa có sẵn môi trường để chạy Laravel và React, hãy cài đặt theo hướng dẫn dưới đây:
+
+### 1. Cài đặt Node.js (Để chạy Frontend React)
+- **Bước 1:** Truy cập trang chủ [Node.js](https://nodejs.org/).
+- **Bước 2:** Chọn nút tải bản **LTS** (Recommended For Most Users). Đây là bản ổn định nhất.
+- **Bước 3:** Mở file `.msi` vừa tải về, nhấn **Next** liên tục và **Finish**.
+- **Kiểm tra:** Mở Terminal/Command Prompt, gõ `node -v`. Nếu hiện phiên bản (ví dụ: `v20.x.x`) là xong.
+
+### 2. Cài đặt Composer (Để chạy Backend Laravel)
+- **Bước 1:** Tải bộ cài tại: [Composer-Setup.exe](https://getcomposer.org/Composer-Setup.exe).
+- **Bước 2:** Chạy file `.exe`. Trong quá trình cài, nếu nó hỏi đường dẫn đến file `php.exe`, hãy trỏ vào thư mục XAMPP của bạn (Thường là: `C:\xampp\php\php.exe`).
+- **Bước 3:** Nhấn **Next** cho đến khi hoàn tất.
+- **Kiểm tra:** Mở Terminal, gõ `composer -v`. Nếu hiện logo chữ **Composer** bằng ký tự đặc biệt là thành công.
+
+---
+
+## 🚀 Các bước khởi chạy dự án (Sau khi đã có công cụ)
+
+### Bước 1: Thiết lập Database
+1. Mở XAMPP Control Panel, nhấn **Start** cho cả Apache và MySQL.
+2. Vào trình duyệt, mở: `http://localhost/phpmyadmin`.
+3. Tạo database mới tên là: `quanlyhocsinh_v2`.
+4. Chọn database vừa tạo -> Chọn tab **Import** -> Chọn file `database.sql` (trong thư mục `BE`) -> Nhấn **Go**.
+
+### Bước 2: Chạy Backend (Laravel)
+Mở Terminal tại thư mục `BE`:
+```bash
+composer install
+copy .env.example .env
+php artisan key:generate
+php artisan serve
 ### 1. Cấu hình Database
 1. Mở XAMPP, bật Apache và MySQL.
 2. Truy cập `http://localhost/phpmyadmin` và tạo một database mới tên là `quanlyhocsinh_v2`.
