@@ -26,5 +26,8 @@
     border-radius: 10px;
 }
 .sidebar-hover-item:hover {
-    transition: all 0.3s ease; /* Delay 0.3 giây để thấy hiệu ứng mượt */
+    background-color: #f0f9ff !important; /* Xanh cực nhạt */
+    color: #0ea5e9 !important;           /* Chữ xanh dương sáng */
+    padding-left: 20px !important;
+    transition: all 0.2s ease;
 }

@@ -23,10 +23,11 @@ const Sidebar = ({ setAuth }) => {
       text: "M muốn thoát hệ thống hả?",
       icon: 'question',
       showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#6c757d',
+      confirmButtonColor: '#6366f1',
+      cancelButtonColor: '#94a3b8',
       confirmButtonText: 'Thoát',
-      cancelButtonText: 'Ở lại'
+      cancelButtonText: 'Ở lại',
+      background: '#ffffff'
     }).then((result) => {
       if (result.isConfirmed) {
         axios.post('/logout')
@@ -45,51 +46,62 @@ const Sidebar = ({ setAuth }) => {
   };
 
   return (
-    /* Chỗ này t đã đổi bg-dark thành style màu xanh Navy (#1e293b) */
     <div 
-      className="text-white vh-100 p-3 shadow" 
+      className="vh-100 p-3 shadow-sm" 
       style={{ 
         width: '250px', 
         position: 'fixed', 
         top: 0, 
         left: 0, 
         overflowY: 'auto',
-        backgroundColor: '#1e293b' // Màu xanh Navy cực xịn
+        backgroundColor: '#f8fafc', // Màu xám trắng cực nhẹ (Slate 50)
+        borderRight: '1px solid #e2e8f0' // Viền ngăn cách màu xám nhạt
       }}
     >
-      <h4 className="text-center text-info fw-bold mb-4 mt-2">🏫 TRƯỜNG CẤP 3</h4>
-      <hr style={{ backgroundColor: '#475569' }} />
+      <div className="d-flex align-items-center justify-content-center gap-2 mb-4 mt-2">
+        <span style={{ fontSize: '1.5rem' }}>🏫</span>
+        <h5 className="fw-bold m-0" style={{ color: '#1e293b', letterSpacing: '1px' }}>QUẢN LÝ CẤP 3</h5>
+      </div>
       
-      <ul className="nav flex-column gap-2">
+      <hr style={{ color: '#cbd5e1' }} />
+      
+      <ul className="nav flex-column gap-1">
         {menuItems.map((item, index) => (
           <li className="nav-item" key={index}>
             <NavLink
               to={item.path}
               className={({ isActive }) =>
-                `nav-link d-flex align-items-center gap-3 rounded text-white ${
+                `nav-link d-flex align-items-center gap-3 rounded ${
                   isActive ? 'fw-bold shadow-sm' : 'sidebar-hover-item'
                 }`
               }
               style={({ isActive }) => ({
-                transition: 'all 0.3s',
-                backgroundColor: isActive ? '#334155' : 'transparent', // Màu nền khi đang chọn
-                borderLeft: isActive ? '4px solid #0dcaf0' : '4px solid transparent' // Vạch xanh bên trái
+                transition: 'all 0.2s ease-in-out',
+                color: isActive ? '#6366f1' : '#475569', // Chữ tím khi active, xám đậm khi thường
+                backgroundColor: isActive ? '#ffffff' : 'transparent', // Nổi bật trên nền xám nhẹ
+                borderLeft: isActive ? '4px solid #6366f1' : '4px solid transparent'
               })}
             >
-              {item.icon} {item.name}
+              {item.icon} <span style={{ fontSize: '0.95rem' }}>{item.name}</span>
             </NavLink>
           </li>
         ))}
       </ul>
 
-      <hr style={{ backgroundColor: '#475569' }} className="mt-4" />
-      
-      <button 
-        className="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2 fw-bold mt-auto mb-3"
-        onClick={handleLogout}
-      >
-        <LogOut size={20} /> Đăng Xuất
-      </button>
+      <div className="mt-auto pt-4">
+        <hr style={{ color: '#cbd5e1' }} className="mb-4" />
+        <button 
+          className="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2 fw-bold"
+          style={{ 
+            borderRadius: '8px',
+            border: '1px solid #fee2e2',
+            backgroundColor: '#fff'
+          }}
+          onClick={handleLogout}
+        >
+          <LogOut size={18} /> Đăng Xuất
+        </button>
+      </div>
     </div>
   );
 };
