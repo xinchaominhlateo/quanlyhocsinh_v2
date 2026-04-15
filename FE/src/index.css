@@ -25,3 +25,6 @@
     background: #495057;
     border-radius: 10px;
 }
+.sidebar-hover-item:hover {
+    transition: all 0.3s ease; /* Delay 0.3 giây để thấy hiệu ứng mượt */
+}
