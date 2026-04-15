@@ -14,6 +14,7 @@ import HanhKiem from './pages/HanhKiem';
 import HocPhi from './pages/HocPhi';
 import GiaoVien from './pages/GiaoVien'; // Nhớ có trang Giáo viên nhé
 import PhanCong from './pages/PhanCong';
+import TaiKhoan from './pages/TaiKhoan';
 function App() {
   // Trạng thái kiểm tra xem đã đăng nhập chưa
   const [isAuth, setIsAuth] = useState(false);
@@ -53,6 +54,7 @@ function App() {
             <Route path="/hanh-kiem" element={<HanhKiem />} />
             <Route path="/hoc-phi" element={<HocPhi />} />
             <Route path="/phan-cong" element={<PhanCong />} />
+            <Route path="/tai-khoan" element={<TaiKhoan />} />
           </Routes>
         </div>
       </div>
