@@ -1,23 +1,23 @@
-/* Tèo copy đoạn này dán vào cuối file index.css là bao đẹp */
+/* --- PHẦN CSS CHO SIDEBAR (Dán đè đoạn cũ của m) --- */
 
-/* 1. Hiệu ứng Hover cho các mục Menu */
-.sidebar-hover-item:hover, 
-.hover-bg-secondary:hover {
-    background-color: rgba(255, 255, 255, 0.1) !important;
-    color: #ffc107 !important; /* Chữ biến thành màu vàng */
-    transform: translateX(8px); /* Nhảy nhẹ sang phải */
-    transition: all 0.3s ease;
+/* 1. Hiệu ứng di chuột cho các mục Menu */
+.sidebar-hover-item:hover {
+    background-color: #334155 !important; /* Đổi màu nền xanh xám sáng */
+    color: #0dcaf0 !important;           /* Chữ chuyển sang màu xanh Cyan cực xịn */
+    padding-left: 30px !important;       /* Nhảy mạnh sang phải 30px như m muốn */
+    transform: translateX(5px);          /* Nhích nhẹ thêm cho sinh động */
+    transition: all 0.3s ease;           /* Hiệu ứng mượt mà, không bị khựng */
 }
 
-/* 2. Cố định lề cho nội dung chính */
+/* 2. Giữ nguyên phần Layout nội dung */
 .content {
     margin-left: 250px; 
     width: calc(100% - 250px);
-    background-color: #f8f9fa; /* Màu nền xám nhạt cho chuyên nghiệp */
+    background-color: #f8f9fa; 
     min-height: 100vh;
 }
 
-/* 3. Tùy chỉnh thanh cuộn của Sidebar nếu menu quá dài */
+/* 3. Thanh cuộn mỏng cho Menu */
 .vh-100::-webkit-scrollbar {
     width: 5px;
 }
