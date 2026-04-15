@@ -44,7 +44,7 @@ const bamNutIn = (hp) => {
   setTimeout(() => {
     handlePrint();
   }, 300);
-};c
+};
 
   return (
     <div className="container-fluid">
