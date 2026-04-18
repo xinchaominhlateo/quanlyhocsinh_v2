@@ -9,13 +9,8 @@ class HocSinh extends Model
 {
     use HasFactory;
 protected $fillable = [
-        'ho_ten', 
-        'ngay_sinh', 
-        'gioi_tinh', 
-        'dia_chi', 
-        'lop_hoc_id'
-    ];
-
+    'ma_hoc_sinh', 'ho_ten', 'ngay_sinh', 'gioi_tinh', 'dia_chi', 'sdt', 'email', 'lop_hoc_id'
+];
     public function lopHoc() {
         return $this->belongsTo(LopHoc::class, 'lop_hoc_id');
     }

@@ -7,5 +7,5 @@ use Illuminate\Database\Eloquent\Model;
 class MonHoc extends Model
 {
     use HasFactory;
-    protected $fillable = ['ma_mon', 'ten_mon', 'khoi'];
+    protected $fillable = ['ma_mon', 'ten_mon', 'so_tiet'];
 }

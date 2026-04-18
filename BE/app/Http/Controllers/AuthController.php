@@ -8,44 +8,51 @@ use App\Models\User;
 
 class AuthController extends Controller
 {
-    // Hàm xử lý đăng nhập
+    /**
+     * Xử lý Đăng nhập và Cấp Token
+     */
     public function login(Request $request)
     {
+        // 1. Kiểm tra đầu vào (Email phải đúng định dạng, Pass không được để trống)
         $credentials = $request->validate([
             'email' => 'required|email',
-            'password' => 'required'
+            'password' => 'required',
         ]);
 
-        // Kiểm tra xem email và pass có khớp trong DB không
+        // 2. Thử đăng nhập
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
-            // Tạo ra 1 cái vé (token) cho React lưu lại
-            $token = $user->createToken('admin_token')->plainTextToken;
+
+            // 🔑 TẠO TOKEN: Đây là cái "vé" để React lưu vào localStorage
+            // M có thể đặt tên token là bất cứ gì, ở đây t đặt là 'AdminToken'
+            $token = $user->createToken('AdminToken')->plainTextToken;
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Đăng nhập thành công',
-                'user' => $user,
-                'token' => $token
+                'message' => 'Đăng nhập thành công!',
+                'token' => $token, // Gửi vé về cho React
+                'user' => $user    // Gửi kèm thông tin user để hiện tên lên Sidebar
             ]);
         }
 
-        // Nếu sai pass thì đuổi về
+        // 3. Nếu sai tài khoản/mật khẩu
         return response()->json([
             'status' => 'error',
-            'message' => 'Sai email hoặc mật khẩu!'
+            'message' => 'Email hoặc mật khẩu không đúng Tèo ơi!'
         ], 401);
     }
 
-    // Hàm xử lý đăng xuất
+    /**
+     * Xử lý Đăng xuất (Xóa token)
+     */
     public function logout(Request $request)
     {
-        // Xóa cái vé (token) hiện tại
+        // Xóa cái token hiện tại của user để lần sau vào phải đăng nhập lại
         $request->user()->currentAccessToken()->delete();
-        
+
         return response()->json([
             'status' => 'success',
-            'message' => 'Đã đăng xuất!'
+            'message' => 'Đã đăng xuất, hẹn gặp lại Tèo nhé!'
         ]);
     }
 }

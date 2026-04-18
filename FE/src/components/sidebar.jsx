@@ -1,11 +1,11 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Users, GraduationCap, BookOpen, Library, FileSpreadsheet, HeartHandshake, CreditCard, UserCog, LogOut, Calendar } from 'lucide-react';
-import axios from 'axios';
+import { Home, Users, GraduationCap, BookOpen, Library, FileSpreadsheet, HeartHandshake, CreditCard, UserCog, LogOut, Calendar, BarChart3 } from 'lucide-react';import axios from 'axios';
 import Swal from 'sweetalert2';
 
 const Sidebar = ({ setAuth }) => {
   const menuItems = [
     { path: '/', name: 'Trang Chủ', icon: <Home size={20} /> },
+    { path: '/thong-ke', name: 'Thống Kê', icon: <BarChart3 size={20} /> },
     { path: '/hoc-sinh', name: 'Học Sinh', icon: <Users size={20} /> },
     { path: '/giao-vien', name: 'Giáo Viên', icon: <GraduationCap size={20} /> },
     { path: '/lop-hoc', name: 'Lớp Học', icon: <Library size={20} /> },
@@ -54,8 +54,8 @@ const Sidebar = ({ setAuth }) => {
         top: 0, 
         left: 0, 
         overflowY: 'auto',
-        backgroundColor: '#f8fafc', // Màu xám trắng cực nhẹ (Slate 50)
-        borderRight: '1px solid #e2e8f0' // Viền ngăn cách màu xám nhạt
+        backgroundColor: '#f8fafc', 
+        borderRight: '1px solid #e2e8f0' 
       }}
     >
       <div className="d-flex align-items-center justify-content-center gap-2 mb-4 mt-2">
@@ -77,8 +77,8 @@ const Sidebar = ({ setAuth }) => {
               }
               style={({ isActive }) => ({
                 transition: 'all 0.2s ease-in-out',
-                color: isActive ? '#6366f1' : '#475569', // Chữ tím khi active, xám đậm khi thường
-                backgroundColor: isActive ? '#ffffff' : 'transparent', // Nổi bật trên nền xám nhẹ
+                color: isActive ? '#6366f1' : '#475569', 
+                backgroundColor: isActive ? '#ffffff' : 'transparent', 
                 borderLeft: isActive ? '4px solid #6366f1' : '4px solid transparent'
               })}
             >
@@ -90,17 +90,18 @@ const Sidebar = ({ setAuth }) => {
 
       <div className="mt-auto pt-4">
         <hr style={{ color: '#cbd5e1' }} className="mb-4" />
-        <button 
-          className="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2 fw-bold"
-          style={{ 
-            borderRadius: '8px',
-            border: '1px solid #fee2e2',
-            backgroundColor: '#fff'
-          }}
-          onClick={handleLogout}
-        >
-          <LogOut size={18} /> Đăng Xuất
-        </button>
+<button 
+  className="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2 fw-bold"
+  style={{ 
+    borderRadius: '8px',
+    border: '1px solid #fee2e2',
+    // ❌ XÓA dòng backgroundColor: '#fff' ở đây đi Tèo nhé
+    transition: 'all 0.3s ease' // Thêm cái này cho nó mượt
+  }}
+  onClick={handleLogout}
+>
+  <LogOut size={18} /> Đăng Xuất
+</button>
       </div>
     </div>
   );

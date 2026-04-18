@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('lop_hocs', function (Blueprint $table) {
             $table->id();
             $table->string('ma_lop')->unique(); // Mã lớp không được trùng nhau
-        $table->string('ten_lop');          // Ví dụ: 10A1, 11B2
+       $table->string('ten_lop')->unique();     // Ví dụ: 10A1, 11B2
         $table->integer('khoi');            // Khối 10, 11, 12
             $table->timestamps();
         });

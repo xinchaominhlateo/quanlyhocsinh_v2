@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('giao_viens', function (Blueprint $table) {
            $table->id();
+           $table->string('ma_giao_vien', 20)->unique(); // THÊM MÃ GIÁO VIÊN
         $table->string('ho_ten');
         $table->string('email')->unique();
         $table->string('sdt');

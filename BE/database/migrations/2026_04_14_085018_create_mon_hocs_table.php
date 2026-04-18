@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('mon_hocs', function (Blueprint $table) {
             $table->id();
             $table->string('ma_mon')->unique(); // VD: TOAN10
-        $table->string('ten_mon');          // VD: Toán Học
-        $table->integer('khoi');            // Dành cho khối 10, 11 hay 12
+        $table->string('ten_mon'); 
+        $table->integer('so_tiet');         // VD: Toán Học
             $table->timestamps();
         });
     }
