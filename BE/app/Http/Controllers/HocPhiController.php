@@ -13,7 +13,7 @@ class HocPhiController extends Controller
      */
     public function index()
     {
-        $data = HocPhi::with('hocSinh')->get();
+        $data = HocPhi::with('hoc_sinh.lop_hoc')->get();
         return response()->json([
             'status' => 'success',
             'data' => $data
@@ -36,8 +36,7 @@ class HocPhiController extends Controller
         $hocPhiMoi = HocPhi::create($request->all());
 
         // Sau khi lưu xong, mình trả về kèm luôn thông tin học sinh để React hiện lên bảng ngay
-        $result = HocPhi::with('hocSinh')->find($hocPhiMoi->id);
-
+$result = HocPhi::with('hoc_sinh.lop_hoc')->find($hocPhiMoi->id);
         return response()->json([
             'status' => 'success',
             'message' => 'Đã tạo phiếu thu thành công!',
@@ -50,8 +49,7 @@ class HocPhiController extends Controller
      */
     public function show($id)
     {
-        $hocPhi = HocPhi::with('hocSinh')->find($id);
-
+$hocPhi = HocPhi::with('hoc_sinh.lop_hoc')->find($id);
         if (!$hocPhi) {
             return response()->json([
                 'status' => 'error',

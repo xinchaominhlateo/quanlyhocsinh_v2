@@ -10,7 +10,7 @@ class GiaoVienController extends Controller
     // 1. LẤY DANH SÁCH GIÁO VIÊN
     public function index()
     {
-        $data = GiaoVien::with('monHoc')->get();
+        $data = GiaoVien::with('mon_hoc')->get();
         return response()->json(['status' => 'success', 'data' => $data]);
     }
 
@@ -47,7 +47,7 @@ class GiaoVienController extends Controller
     // 3. XEM CHI TIẾT
     public function show($id)
     {
-        $gv = GiaoVien::with('monHoc')->find($id);
+        $gv = GiaoVien::with('mon_hoc')->find($id);
 
         if (!$gv) {
             return response()->json(['status' => 'error', 'message' => 'Không tìm thấy giáo viên này!'], 404);
