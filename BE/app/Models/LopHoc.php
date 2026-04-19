@@ -12,7 +12,7 @@ class LopHoc extends Model
     return $this->hasMany(HocSinh::class, 'lop_hoc_id');
 }
 // Một lớp học có nhiều giáo viên
-    public function giaoViens() {
+    public function giao_viens() {
         return $this->belongsToMany(GiaoVien::class, 'giao_vien_lop_hoc');
     }
 }

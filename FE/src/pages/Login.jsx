@@ -90,7 +90,7 @@ const Login = ({ setAuth }) => {
           </form>
 
           <div className="mt-4 text-center">
-            <small className="text-muted">Quên mật khẩu? Liên hệ Admin Tèo</small>
+            <small className="text-muted">Quên mật khẩu? Liên hệ Admin </small>
           </div>
         </div>
       </div>

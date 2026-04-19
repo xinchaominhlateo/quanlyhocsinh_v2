@@ -12,22 +12,31 @@ const PhanCong = () => {
   }, []);
 
   const layDuLieu = () => {
-    // Gọi API lấy danh sách phân công (từ PhanCongController m vừa viết)
     axios.get('/phancong').then(res => setDanhSachLop(res.data.data));
-    // Lấy thêm danh sách giáo viên để hiện lên cái dropdown chọn
     axios.get('/giaovien').then(res => setDanhSachGV(res.data.data));
   };
 
-  const handlePhanCong = (e) => {
+const handlePhanCong = (e) => {
     e.preventDefault();
     axios.post('/phancong', form)
       .then((res) => {
         Swal.fire({ icon: 'success', title: 'Tuyệt vời', text: res.data.message, timer: 1500 });
-        layDuLieu(); // Load lại bảng
+        
+        // 🛑 Cập nhật lại danh sách lớp ngay tại đây từ dữ liệu Backend trả về
+        if(res.data.data) {
+            setDanhSachLop(res.data.data);
+        } else {
+            layDuLieu(); // Nếu không có data trả về thì gọi lại hàm lấy dữ liệu
+        }
+        
+        setForm({ lop_hoc_id: '', giao_vien_id: '' }); // Reset form
       })
-      .catch(err => Swal.fire('Lỗi', 'Không phân công được!', 'error'));
+      .catch(err => {
+          // Hiện lỗi thực tế từ server cho m dễ debug
+          const errorMsg = err.response?.data?.message || 'Không phân công được!';
+          Swal.fire('Lỗi', errorMsg, 'error');
+      });
   };
-
   const handleHuyPhanCong = (lop_id, gv_id) => {
     Swal.fire({
       title: 'Bỏ phân công?',
@@ -51,7 +60,6 @@ const PhanCong = () => {
     <div className="container-fluid">
       <h2 className="text-primary fw-bold mb-4">🗓️ PHÂN CÔNG GIẢNG DẠY</h2>
       
-      {/* KHU VỰC FORM CHỌN GIÁO VIÊN VÀ LỚP */}
       <div className="card shadow-sm mb-4 border-info">
         <div className="card-body">
           <form onSubmit={handlePhanCong} className="row align-items-end">
@@ -71,7 +79,8 @@ const PhanCong = () => {
                 <option value="">-- Chọn giáo viên --</option>
                 {danhSachGV.map(gv => (
                   <option key={gv.id} value={gv.id}>
-                    {gv.ho_ten} (Môn: {gv.mon_hoc?.ten_mon})
+                    {/* HIỆN GIỚI TÍNH TRÊN DROPDOWN CHO DỄ CHỌN */}
+                    {gv.gioi_tinh === 'Nam' ? '👨‍🏫' : '👩‍🏫'} {gv.ho_ten} (Môn: {gv.mon_hoc?.ten_mon})
                   </option>
                 ))}
               </select>
@@ -86,7 +95,6 @@ const PhanCong = () => {
         </div>
       </div>
 
-      {/* KHU VỰC BẢNG HIỂN THỊ */}
       <div className="card shadow-sm">
         <div className="card-header bg-dark text-white fw-bold">
           Danh Sách Lớp & Giáo Viên Phụ Trách
@@ -100,21 +108,33 @@ const PhanCong = () => {
                     🏫 {lop.ten_lop}
                   </td>
                   <td>
-                    {/* Chỗ này sẽ in ra danh sách các giáo viên dạy lớp này dưới dạng các cục Tag */}
-                    <div className="d-flex flex-wrap gap-2">
+                    <div className="d-flex flex-wrap gap-2 py-2">
                       {lop.giao_viens && lop.giao_viens.length > 0 ? (
                         lop.giao_viens.map(gv => (
-                          <span key={gv.id} className="badge bg-light text-dark border p-2 d-flex align-items-center">
-                            👨‍🏫 {gv.ho_ten} <small className="text-primary ms-1">({gv.mon_hoc?.ten_mon})</small>
+                          <span key={gv.id} className="badge bg-white text-dark border p-2 d-flex align-items-center shadow-sm">
+                            
+                            {/* 1. THÊM GIỚI TÍNH VÀ ICON TƯƠNG ỨNG */}
+                            <span className={`me-1 ${gv.gioi_tinh === 'Nam' ? 'text-primary' : 'text-danger'}`}>
+                              {gv.gioi_tinh === 'Nam' ? '👨‍🏫' : '👩‍🏫'}
+                            </span>
+                            
+                            <span className="fw-bold">{gv.ho_ten}</span>
+                            
+                            {/* HIỆN GIỚI TÍNH CHỮ NHỎ (NẾU M CẦN) */}
+                            <small className="text-muted ms-1">({gv.gioi_tinh})</small>
+
+                            <small className="text-info ms-1"> - {gv.mon_hoc?.ten_mon}</small>
+                            
                             <button 
                               className="btn-close ms-2" 
-                              style={{ fontSize: '0.5rem' }} 
+                              style={{ fontSize: '0.6rem' }} 
                               onClick={() => handleHuyPhanCong(lop.id, gv.id)}
+                              title="Gỡ giáo viên"
                             ></button>
                           </span>
                         ))
                       ) : (
-                        <span className="text-muted fst-italic">Chưa có giáo viên nào...</span>
+                        <span className="text-muted fst-italic py-2">Chưa có giáo viên nào được phân công...</span>
                       )}
                     </div>
                   </td>
@@ -124,7 +144,6 @@ const PhanCong = () => {
           </table>
         </div>
       </div>
-
     </div>
   );
 };

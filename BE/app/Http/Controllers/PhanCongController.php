@@ -11,35 +11,48 @@ class PhanCongController extends Controller
     // 1. Lấy danh sách Lớp kèm theo các Giáo viên đang dạy lớp đó
     public function index()
     {
-        $data = LopHoc::with('giaoViens.monHoc')->get();
+        // 🛑 QUAN TRỌNG: Phải dùng 'giao_viens.mon_hoc' (có gạch dưới) 
+        // để khớp với tên hàm đã đặt trong Model
+        // Laravel sẽ tự động lấy hết các cột bao gồm cả 'gioi_tinh' cho m.
+        $data = LopHoc::with('giao_viens.mon_hoc')->get();
+        
         return response()->json(['status' => 'success', 'data' => $data]);
     }
 
     // 2. Thêm một Giáo viên vào dạy một Lớp
-    public function store(Request $request)
-    {
-        $lop = LopHoc::find($request->lop_hoc_id);
-        
-        if(!$lop) {
-            return response()->json(['status' => 'error', 'message' => 'Không tìm thấy lớp!'], 404);
-        }
-
-        // Dùng syncWithoutDetaching để chèn vào bảng trung gian (nếu có rồi thì không chèn trùng)
-        $lop->giaoViens()->syncWithoutDetaching([$request->giao_vien_id]);
-
-        return response()->json(['status' => 'success', 'message' => 'Phân công thành công!']);
+public function store(Request $request)
+{
+    // 1. Tìm lớp
+    $lop = LopHoc::find($request->lop_hoc_id);
+    
+    if(!$lop) {
+        return response()->json(['status' => 'error', 'message' => 'Không tìm thấy lớp!'], 404);
     }
 
+    // 2. Lưu giáo viên vào lớp (Bảng trung gian)
+    // syncWithoutDetaching giúp thêm giáo viên mà không xóa giáo viên cũ của lớp đó
+    $lop->giao_viens()->syncWithoutDetaching([$request->giao_vien_id]);
+
+    // 3. 🛑 QUAN TRỌNG: Lấy lại toàn bộ danh sách lớp đã được cập nhật để trả về cho React
+    $dataCapNhat = LopHoc::with('giao_viens.mon_hoc')->get();
+
+    return response()->json([
+        'status' => 'success', 
+        'message' => 'Phân công thành công!',
+        'data' => $dataCapNhat // Trả luôn cục data mới về cho React
+    ]);
+}
     // 3. Hủy phân công (Xóa giáo viên khỏi lớp)
     public function destroy($lop_id, $gv_id)
     {
         $lop = LopHoc::find($lop_id);
         
         if($lop) {
-            // Lệnh detach dùng để gỡ liên kết trong bảng trung gian
-            $lop->giaoViens()->detach($gv_id);
+            // Đổi thành giao_viens() cho đồng bộ
+            $lop->giao_viens()->detach($gv_id);
+            return response()->json(['status' => 'success', 'message' => 'Đã hủy phân công!']);
         }
 
-        return response()->json(['status' => 'success', 'message' => 'Đã hủy phân công!']);
+        return response()->json(['status' => 'error', 'message' => 'Không tìm thấy lớp!'], 404);
     }
 }

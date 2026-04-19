@@ -52,7 +52,7 @@ class AuthController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Đã đăng xuất, hẹn gặp lại Tèo nhé!'
+            'message' => 'Đã đăng xuất, hẹn gặp lại nhé!'
         ]);
     }
 }

@@ -8,8 +8,10 @@ const HocPhi = () => {
   const [danhSachHP, setDanhSachHP] = useState([]);
   const [danhSachHS, setDanhSachHS] = useState([]);
   const [form, setForm] = useState({ hoc_sinh_id: '', hoc_ki: '', so_tien: '', trang_thai: 'Chưa đóng' });
+  
+  // 👇 THÊM BIẾN ĐỂ THEO DÕI ĐANG SỬA PHIẾU NÀO
+  const [idDangSua, setIdDangSua] = useState(null);
 
-  // 👇 1. KHAI BÁO BIẾN CHO CHỨC NĂNG IN
   const componentRef = useRef();
   const [duLieuIn, setDuLieuIn] = useState(null);
 
@@ -20,11 +22,30 @@ const HocPhi = () => {
     axios.get('/hocsinh').then(res => setDanhSachHS(res.data.data));
   };
 
+  // 👇 HÀM KHI BẤM NÚT SỬA
+  const handleChonSua = (hp) => {
+    setIdDangSua(hp.id);
+    setForm({
+      hoc_sinh_id: hp.hoc_sinh_id,
+      hoc_ki: hp.hoc_ki,
+      so_tien: hp.so_tien,
+      trang_thai: hp.trang_thai
+    });
+  };
+
   const handleLuu = (e) => {
     e.preventDefault();
-    axios.post('/hocphi', form).then(() => {
-      Swal.fire('Thành công', 'Đã thêm phiếu thu!', 'success');
+    // ✅ SỬA LOGIC LƯU: NẾU CÓ ID THÌ PUT (SỬA), KHÔNG THÌ POST (THÊM)
+    const request = idDangSua 
+      ? axios.put(`/hocphi/${idDangSua}`, form) 
+      : axios.post('/hocphi', form);
+
+    request.then(() => {
+      Swal.fire('Thành công', idDangSua ? 'Đã cập nhật phiếu thu!' : 'Đã thêm phiếu thu!', 'success');
       layDuLieu();
+      // Reset form và thoát chế độ sửa
+      setForm({ hoc_sinh_id: '', hoc_ki: '', so_tien: '', trang_thai: 'Chưa đóng' });
+      setIdDangSua(null);
     });
   };
 
@@ -33,7 +54,6 @@ const HocPhi = () => {
       .then(() => { layDuLieu(); Swal.fire('Xong!', 'Đã cập nhật trạng thái đóng tiền', 'success'); });
   };
 
-  // 👇 2. LOGIC XỬ LÝ LỆNH IN
   const handlePrint = useReactToPrint({
     contentRef: componentRef, 
   });
@@ -49,17 +69,18 @@ const HocPhi = () => {
     <div className="container-fluid">
       <h2 className="text-primary fw-bold mb-4">💰 QUẢN LÝ HỌC PHÍ</h2>
       
-      <div className="card shadow-sm mb-4 border-primary">
+      {/* CARD NHẬP LIỆU: Đổi màu viền khi đang sửa cho dễ nhận biết */}
+      <div className={`card shadow-sm mb-4 border-${idDangSua ? 'warning' : 'primary'}`}>
         <div className="card-body">
           <form onSubmit={handleLuu} className="row">
             <div className="col-md-4 mb-3">
               <label className="fw-bold">Học Sinh</label>
-              {/* ✅ CHỖ SỬA A: HIỆN MÃ HS TRONG Ô CHỌN */}
               <select 
                 className="form-select border-primary" 
                 value={form.hoc_sinh_id}
                 onChange={e => setForm({...form, hoc_sinh_id: e.target.value})} 
                 required
+                disabled={idDangSua} // Khóa học sinh khi sửa để tránh nhầm lẫn
               >
                 <option value="">-- Chọn học sinh --</option>
                 {danhSachHS.map(hs => (
@@ -81,17 +102,28 @@ const HocPhi = () => {
                 <option value="">-- Chọn học kỳ --</option>
                 <option value="Học kỳ 1">Học kỳ 1</option>
                 <option value="Học kỳ 2">Học kỳ 2</option>
-                
               </select>
             </div>
 
             <div className="col-md-3 mb-3">
               <label className="fw-bold">Số Tiền (VNĐ)</label>
-              <input type="number" className="form-control" onChange={e => setForm({...form, so_tien: e.target.value})} required />
+              {/* ✅ THÊM VALUE ĐỂ KHI SỬA NÓ HIỆN LÊN Ô NHẬP */}
+              <input 
+                type="number" 
+                className="form-control" 
+                value={form.so_tien} 
+                onChange={e => setForm({...form, so_tien: e.target.value})} 
+                required 
+              />
             </div>
 
-            <div className="col-md-2 d-flex align-items-end mb-3">
-              <button type="submit" className="btn btn-primary w-100 fw-bold">Tạo Phiếu</button>
+            <div className="col-md-2 d-flex align-items-end mb-3 gap-2">
+              <button type="submit" className={`btn ${idDangSua ? 'btn-warning' : 'btn-primary'} w-100 fw-bold`}>
+                {idDangSua ? 'Cập Nhật' : 'Tạo Phiếu'}
+              </button>
+              {idDangSua && (
+                <button type="button" className="btn btn-secondary" onClick={() => { setIdDangSua(null); setForm({ hoc_sinh_id: '', hoc_ki: '', so_tien: '', trang_thai: 'Chưa đóng' }); }}>Hủy</button>
+              )}
             </div>
           </form>
         </div>
@@ -102,7 +134,6 @@ const HocPhi = () => {
           <table className="table table-hover table-bordered mb-0">
             <thead className="table-dark text-center">
               <tr>
-                {/* ✅ CHỖ SỬA B1: THÊM CỘT MÃ HS TRÊN TIÊU ĐỀ */}
                 <th className="text-info">Mã HS</th>
                 <th className="text-start">Học Sinh</th>
                 <th>Học Kỳ</th>
@@ -115,7 +146,6 @@ const HocPhi = () => {
             <tbody className="text-center">
               {danhSachHP.map(hp => (
                 <tr key={hp.id} className="align-middle">
-                  {/* ✅ CHỖ SỬA B2: HIỆN MÃ HS TRONG DÒNG DỮ LIỆU */}
                   <td className="fw-bold text-danger">{hp.hoc_sinh?.ma_hoc_sinh}</td>
                   <td className="text-start fw-bold text-primary">{hp.hoc_sinh?.ho_ten}</td>
                   <td>{hp.hoc_ki}</td>
@@ -135,11 +165,14 @@ const HocPhi = () => {
                     
                     {hp.trang_thai === 'Đã đóng' && (
                       <button className="btn btn-sm btn-outline-primary me-2 fw-bold" onClick={() => bamNutIn(hp)}>
-                        🖨️ In Biên Lai
+                        🖨️ In
                       </button>
                     )}
 
-                    <button className="btn btn-sm btn-link text-danger p-0" onClick={() => {
+                    {/* ✅ NÚT SỬA ĐƯỢC CHÈN VÀO ĐÂY */}
+                    <button className="btn btn-sm btn-outline-warning me-2 fw-bold" onClick={() => handleChonSua(hp)}>Sửa</button>
+
+                    <button className="btn btn-sm btn-link text-danger p-0 fw-bold" style={{ textDecoration: 'none' }} onClick={() => {
                       Swal.fire({
                         title: 'Xóa phiếu này?', icon: 'warning', showCancelButton: true
                       }).then(res => {

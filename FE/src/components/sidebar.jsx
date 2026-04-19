@@ -20,7 +20,7 @@ const Sidebar = ({ setAuth }) => {
   const handleLogout = () => {
     Swal.fire({
       title: 'Đăng xuất?',
-      text: "M muốn thoát hệ thống hả?",
+      text: "Bạn có muốn thoát hệ thống ?",
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#6366f1',
@@ -34,7 +34,7 @@ const Sidebar = ({ setAuth }) => {
           .then(() => {
             localStorage.removeItem('token');
             setAuth(false); 
-            Swal.fire('Tạm biệt!', 'Hẹn gặp lại sếp.', 'success');
+            Swal.fire('Tạm biệt!', 'Hẹn gặp lại bạn.', 'success');
           })
           .catch((err) => {
             console.error("Lỗi đăng xuất:", err);

@@ -43,7 +43,7 @@ class UserController extends Controller
         if (Auth::id() == $id) {
             return response()->json([
                 'status' => 'error', 
-                'message' => 'M định tự sát hả Tèo? Không được xóa tài khoản đang đăng nhập nha!'
+                'message' => 'Không được xóa tài khoản đang đăng nhập nha!'
             ], 400);
         }
 

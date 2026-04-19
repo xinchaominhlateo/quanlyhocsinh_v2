@@ -11,7 +11,7 @@ class HocSinh extends Model
 protected $fillable = [
     'ma_hoc_sinh', 'ho_ten', 'ngay_sinh', 'gioi_tinh', 'dia_chi', 'sdt', 'email', 'lop_hoc_id'
 ];
-    public function lopHoc() {
+    public function lop_hoc() {
         return $this->belongsTo(LopHoc::class, 'lop_hoc_id');
     }
 }

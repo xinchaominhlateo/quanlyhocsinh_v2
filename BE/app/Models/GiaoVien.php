@@ -6,9 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class GiaoVien extends Model {
     use HasFactory;
-protected $fillable = ['ma_giao_vien', 'ho_ten', 'email', 'sdt', 'mon_hoc_id'];
+protected $fillable = ['ma_giao_vien','gioi_tinh', 'ho_ten', 'email', 'sdt', 'mon_hoc_id'];
     // Thiết lập quan hệ: 1 Giáo viên dạy 1 Môn học
-    public function monHoc() {
+    public function mon_Hoc() {
         return $this->belongsTo(MonHoc::class, 'mon_hoc_id');
     }
     // Một giáo viên dạy nhiều lớp
