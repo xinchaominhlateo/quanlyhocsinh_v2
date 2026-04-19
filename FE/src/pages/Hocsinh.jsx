@@ -36,15 +36,15 @@ const Hocsinh = () => {
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#d33',
-      confirmButtonText: 'Đúng, Xóa luôn!',
+      confirmButtonText: 'Xác nhận xóa',
       cancelButtonText: 'Hủy'
     }).then((result) => {
       if (result.isConfirmed) {
         axios.delete(`/hocsinh/${id}`).then(() => {
-          Swal.fire('Đã xóa!', 'Học sinh đã được gạch tên khỏi sổ.', 'success');
+          Swal.fire('Thành công', 'Đã xóa thông tin học sinh', 'success');
           layDuLieu(pagination.current_page);
         }).catch(err => {
-          Swal.fire('Lỗi', 'Không xóa được đâu Tèo ơi!', 'error');
+          Swal.fire('Lỗi', 'Có lỗi xảy ra, không thể xóa thông tin học sinh này.', 'error');
         });
       }
     });

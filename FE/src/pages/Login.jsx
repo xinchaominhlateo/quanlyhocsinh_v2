@@ -3,8 +3,8 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 
 const Login = ({ setAuth }) => {
-  const [email, setEmail] = useState('admin@gmail.com');
-  const [password, setPassword] = useState('123456');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -85,7 +85,7 @@ const Login = ({ setAuth }) => {
                 backgroundImage: 'linear-gradient(to right, #6366f1, #a855f7)'
               }}
             >
-              VÀO HỆ THỐNG
+              ĐĂNG NHẬP
             </button>
           </form>
 

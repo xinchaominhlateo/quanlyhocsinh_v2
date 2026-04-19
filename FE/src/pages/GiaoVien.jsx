@@ -82,7 +82,7 @@ const GiaoVien = () => {
   const handleXoa = (id) => {
     Swal.fire({
       title: 'Xác nhận xóa?', text: "Dữ liệu giáo viên sẽ mất vĩnh viễn!", icon: 'warning',
-      showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Xóa ngay', cancelButtonText: 'Hủy'
+      showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Xác nhận xóa', cancelButtonText: 'Hủy'
     }).then((result) => {
       if (result.isConfirmed) {
         axios.delete(`/giaovien/${id}`).then(() => {

@@ -38,7 +38,7 @@ const TaiKhoan = () => {
       showCancelButton: true,
       confirmButtonColor: '#d33',
       cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Đúng, xóa nó!',
+      confirmButtonText: 'Xác nhận xóa ',
       cancelButtonText: 'Hủy'
     }).then(res => {
       if(res.isConfirmed) {
@@ -104,7 +104,7 @@ const TaiKhoan = () => {
               <tr key={u.id} className="align-middle">
                 <td>{u.id}</td>
                 <td className="fw-bold text-primary text-start px-4">
-                  {u.name} {u.id === currentUser.id && <span className="badge bg-warning text-dark ms-2">Đang là bạn</span>}
+                  {u.name} {u.id === currentUser.id && <span className="badge bg-warning text-dark ms-2">Tài khoản của bạn</span>}
                 </td>
                 <td>{u.email}</td>
                 <td><span className="badge bg-info">{u.role}</span></td>
