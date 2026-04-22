@@ -11,15 +11,32 @@ class HocPhiController extends Controller
     /**
      * Lấy danh sách phiếu thu kèm thông tin học sinh
      */
-    public function index()
+   /**
+     * Lấy danh sách phiếu thu (Đã cấu hình Phân quyền bảo mật)
+     */
+    public function index(Request $request)
     {
-        $data = HocPhi::with('hoc_sinh.lop_hoc')->get();
+        // Lấy thông tin user hiện tại
+        $user = auth('sanctum')->user() ?? $request->user();
+
+        // Khởi tạo query lấy học phí kèm thông tin học sinh
+        $query = HocPhi::with('hoc_sinh.lop_hoc');
+
+        // BỘ LỌC DỮ LIỆU
+        if ($user && $user->role === 'student') {
+            // Nếu là HỌC SINH: Chỉ lấy những phiếu thu có liên kết với tài khoản user_id này
+            $query->whereHas('hoc_sinh', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            });
+        }
+        // Nếu là ADMIN: Lấy tất cả (không cần lọc)
+
+        // Trả về dữ liệu
         return response()->json([
             'status' => 'success',
-            'data' => $data
+            'data' => $query->latest()->get()
         ]);
     }
-
     /**
      * 🛑 ĐÂY LÀ HÀM QUAN TRỌNG NHẤT M ĐANG THIẾU
      * Hàm này dùng để xử lý khi m bấm nút "Tạo Phiếu" bên React

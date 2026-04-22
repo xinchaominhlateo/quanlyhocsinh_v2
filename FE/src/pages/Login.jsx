@@ -11,6 +11,7 @@ const Login = ({ setAuth }) => {
     try {
       const res = await axios.post('/login', { email, password });
       localStorage.setItem('token', res.data.token);
+      localStorage.setItem('userRole', res.data.role);
       axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
       setAuth(true);
       Swal.fire({

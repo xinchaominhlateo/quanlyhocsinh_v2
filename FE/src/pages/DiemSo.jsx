@@ -6,59 +6,102 @@ const DiemSo = () => {
   const [danhSachDiem, setDanhSachDiem] = useState([]);
   const [danhSachHS, setDanhSachHS] = useState([]);
   const [danhSachMon, setDanhSachMon] = useState([]);
-  const [idDangSua, setIdDangSua] = useState(null); // Thêm cái này để biết đang sửa dòng nào
+  const [danhSachLop, setDanhSachLop] = useState([]); // MỚI: State lưu danh sách lớp
   
-  const [form, setForm] = useState({ 
-    hoc_sinh_id: '', 
-    mon_hoc_id: '', 
-    diem_mieng: '', 
-    diem_15_phut: '', 
-    diem_1_tiet: '', 
-    diem_thi: '' 
-  });
+  // State phục vụ việc chọn Lớp và Môn để nhập bảng
+  const [selectedLop, setSelectedLop] = useState('');
+  const [selectedMon, setSelectedMon] = useState('');
+  
+  // MỚI: Mảng dữ liệu chứa điểm của cả lớp đang được chọn
+  const [batchData, setBatchData] = useState([]); 
+
+  const userRole = localStorage.getItem('userRole') || 'student';
 
   useEffect(() => { layDuLieu(); }, []);
 
-  const layDuLieu = () => {
-    axios.get('/diemso').then(res => setDanhSachDiem(res.data.data));
-    axios.get('/hocsinh').then(res => setDanhSachHS(res.data.data));
-    axios.get('/monhoc').then(res => setDanhSachMon(res.data.data));
+  const layDuLieu = async () => {
+    // 1. Lấy danh sách điểm tổng (để hiện ở bảng lịch sử bên dưới)
+    const resDiem = await axios.get('/diemso');
+    setDanhSachDiem(resDiem.data.data);
+
+    // 2. Tải thêm dữ liệu Môn, Lớp, Học sinh nếu là Admin/Giáo viên
+    if (userRole !== 'student') {
+      const resMon = await axios.get('/monhoc');
+      setDanhSachMon(resMon.data.data);
+
+      const resHS = await axios.get('/hocsinh');
+      setDanhSachHS(resHS.data.data);
+
+      // Nếu là giáo viên thì gọi API lớp của tôi, nếu admin thì gọi tất cả lớp
+      if (userRole === 'teacher') {
+        const resLop = await axios.get('/my-classes');
+        setDanhSachLop(resLop.data.data);
+      } else {
+        const resLop = await axios.get('/lophoc');
+        setDanhSachLop(resLop.data.data);
+      }
+    }
   };
 
-  // Logic Sửa: Đổ dữ liệu từ bảng ngược lên Form
-  const handleChonSua = (diem) => {
-    setIdDangSua(diem.id);
-    setForm({
-      hoc_sinh_id: diem.hoc_sinh_id,
-      mon_hoc_id: diem.mon_hoc_id,
-      diem_mieng: diem.diem_mieng,
-      diem_15_phut: diem.diem_15_phut,
-      diem_1_tiet: diem.diem_1_tiet,
-      diem_thi: diem.diem_thi
-    });
+  // MỚI: Tự động tạo bảng điểm Excel khi chọn xong Lớp và Môn
+  useEffect(() => {
+    if (selectedLop && selectedMon) {
+      // Lọc ra các học sinh thuộc lớp đang chọn
+const studentsInClass = danhSachHS.filter(hs => String(hs.lop_hoc_id) === String(selectedLop));      
+      // Tạo khung nhập điểm cho từng em
+      const initialBatch = studentsInClass.map(hs => {
+        // Tìm xem học sinh này đã có điểm môn này trong database chưa
+        const existingGrade = danhSachDiem.find(d => 
+          String(d.hoc_sinh_id) === String(hs.id) && String(d.mon_hoc_id) === String(selectedMon)
+        );
+
+        return {
+          hoc_sinh_id: hs.id,
+          ho_ten: hs.ho_ten,
+          // Nếu đã có điểm thì điền sẵn vào ô, chưa có thì để trống
+          diem_mieng: existingGrade?.diem_mieng ?? '',
+          diem_15_phut: existingGrade?.diem_15_phut ?? '',
+          diem_1_tiet: existingGrade?.diem_1_tiet ?? '',
+          diem_thi: existingGrade?.diem_thi ?? ''
+        };
+      });
+
+      setBatchData(initialBatch);
+    } else {
+      setBatchData([]); // Xóa bảng nếu chưa chọn đủ Lớp và Môn
+    }
+  }, [selectedLop, selectedMon, danhSachHS, danhSachDiem]);
+
+  // Hàm cập nhật state khi giáo viên gõ điểm vào 1 ô bất kỳ trên bảng
+  const handleInputChange = (index, field, value) => {
+    const newData = [...batchData];
+    newData[index][field] = value;
+    setBatchData(newData);
   };
 
-  const handleLuu = (e) => {
+  // MỚI: Hàm gửi toàn bộ bảng điểm lên server
+  const handleLuuBatch = (e) => {
     e.preventDefault();
-    // Nếu có idDangSua thì gọi PUT (sửa), không thì gọi POST (thêm)
-    const request = idDangSua 
-      ? axios.put(`/diemso/${idDangSua}`, form) 
-      : axios.post('/diemso', form);
+    if(batchData.length === 0) return Swal.fire('Cảnh báo', 'Lớp này chưa có học sinh nào!', 'warning');
 
-    request.then(() => {
-      Swal.fire('Thành công', 'Đã lưu điểm! Hệ thống đã tự động tính ĐTB.', 'success');
-      layDuLieu();
-      setIdDangSua(null); // Lưu xong thì reset trạng thái sửa
-      setForm({ hoc_sinh_id: '', mon_hoc_id: '', diem_mieng: '', diem_15_phut: '', diem_1_tiet: '', diem_thi: '' });
+    axios.post('/diemso/batch', {
+      mon_hoc_id: selectedMon,
+      diem_data: batchData
+    }).then(() => {
+      Swal.fire('Thành công', 'Đã lưu điểm cho toàn bộ lớp! Hệ thống tự động tính ĐTB.', 'success');
+      layDuLieu(); // Tải lại dữ liệu để bảng bên dưới cập nhật
+      // Xóa form chọn để tránh nhập nhầm
+      setSelectedLop('');
+      setSelectedMon('');
     }).catch((err) => {
       console.error(err);
-      Swal.fire('Lỗi', 'Không thể lưu điểm. M check lại xem đã sửa ép kiểu (float) ở Backend chưa nhé!', 'error');
+      Swal.fire('Lỗi', err.response?.data?.message || 'Không thể lưu điểm hàng loạt.', 'error');
     });
   };
 
   const handleXoa = (id) => {
     Swal.fire({
-      title: 'Chắc chắn xóa?',
+      title: 'Xóa dòng điểm này?',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Xóa',
@@ -74,64 +117,98 @@ const DiemSo = () => {
   };
 
   return (
-    <div className="container-fluid">
+    <div className="container-fluid mb-5">
       <h2 className="text-primary fw-bold mb-4">📝 QUẢN LÝ ĐIỂM SỐ</h2>
       
-      <div className="card shadow-sm mb-4 border-info">
-        <div className="card-header bg-info text-white fw-bold">
-            {idDangSua ? '✏️ Đang sửa điểm học sinh' : 'Nhập điểm thành phần (ĐTB sẽ tự động tính)'}
+      {/* ========================================== */}
+      {/* GIAO DIỆN NHẬP ĐIỂM HÀNG LOẠT (BẢNG EXCEL) */}
+      {/* ========================================== */}
+      {userRole !== 'student' && (
+        <div className="card shadow-sm mb-5 border-info">
+          <div className="card-header bg-info text-white fw-bold d-flex justify-content-between align-items-center">
+            <span>📚 SỔ ĐIỂM LỚP HỌC (Nhập hàng loạt)</span>
+          </div>
+          <div className="card-body bg-light">
+            {/* Thanh chọn Môn và Lớp */}
+            <div className="row g-3 mb-4">
+              <div className="col-md-4">
+                <label className="form-label fw-bold">1. Chọn Môn Học</label>
+                <select className="form-select border-primary" value={selectedMon} onChange={e => setSelectedMon(e.target.value)}>
+                  <option value="">-- Chọn môn --</option>
+                  {danhSachMon.map(mon => <option key={mon.id} value={mon.id}>{mon.ten_mon}</option>)}
+                </select>
+              </div>
+              <div className="col-md-4">
+                <label className="form-label fw-bold">2. Chọn Lớp</label>
+                <select className="form-select border-primary" value={selectedLop} onChange={e => setSelectedLop(e.target.value)}>
+                  <option value="">-- Chọn lớp --</option>
+                  {danhSachLop.map(lop => <option key={lop.id} value={lop.id}>{lop.ten_lop}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Bảng nhập điểm xuất hiện khi đã chọn Môn và Lớp */}
+            {selectedLop && selectedMon && (
+              <form onSubmit={handleLuuBatch}>
+                <div className="table-responsive shadow-sm rounded">
+                  <table className="table table-bordered table-hover mb-0 bg-white align-middle text-center">
+                    <thead className="table-dark">
+                      <tr>
+                        <th className="text-start" style={{width: '25%'}}>Họ Tên Học Sinh</th>
+                        <th>Điểm Miệng</th>
+                        <th>Điểm 15 Phút</th>
+                        <th>Điểm 1 Tiết</th>
+                        <th>Điểm Thi HK</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {batchData.length > 0 ? batchData.map((item, index) => (
+                        <tr key={item.hoc_sinh_id}>
+                          <td className="text-start fw-bold text-primary">{item.ho_ten}</td>
+                          <td>
+                            <input type="number" step="0.1" min="0" max="10" className="form-control form-control-sm text-center" 
+                                   value={item.diem_mieng} onChange={e => handleInputChange(index, 'diem_mieng', e.target.value)} />
+                          </td>
+                          <td>
+                            <input type="number" step="0.1" min="0" max="10" className="form-control form-control-sm text-center" 
+                                   value={item.diem_15_phut} onChange={e => handleInputChange(index, 'diem_15_phut', e.target.value)} />
+                          </td>
+                          <td>
+                            <input type="number" step="0.1" min="0" max="10" className="form-control form-control-sm text-center" 
+                                   value={item.diem_1_tiet} onChange={e => handleInputChange(index, 'diem_1_tiet', e.target.value)} />
+                          </td>
+                          <td>
+                            <input type="number" step="0.1" min="0" max="10" className="form-control form-control-sm text-center" 
+                                   value={item.diem_thi} onChange={e => handleInputChange(index, 'diem_thi', e.target.value)} />
+                          </td>
+                        </tr>
+                      )) : (
+                        <tr><td colSpan="5" className="text-danger py-3">Lớp này hiện chưa có học sinh nào!</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {batchData.length > 0 && (
+                  <div className="mt-3 text-end">
+                    <button type="submit" className="btn btn-primary fw-bold px-4 py-2 shadow">
+                      💾 LƯU ĐIỂM CẢ LỚP
+                    </button>
+                  </div>
+                )}
+              </form>
+            )}
+          </div>
         </div>
-        <div className="card-body">
-          <form onSubmit={handleLuu} className="row g-3">
-            <div className="col-md-6">
-              <label className="form-label fw-bold">Học Sinh</label>
-              <select className="form-select" value={form.hoc_sinh_id} onChange={e => setForm({...form, hoc_sinh_id: e.target.value})} required disabled={idDangSua}>
-                <option value="">-- Chọn học sinh --</option>
-                {danhSachHS.map(hs => <option key={hs.id} value={hs.id}>{hs.ho_ten}</option>)}
-              </select>
-            </div>
-            
-            <div className="col-md-6">
-              <label className="form-label fw-bold">Môn Học</label>
-              <select className="form-select" value={form.mon_hoc_id} onChange={e => setForm({...form, mon_hoc_id: e.target.value})} required disabled={idDangSua}>
-                <option value="">-- Chọn môn --</option>
-                {danhSachMon.map(mon => <option key={mon.id} value={mon.id}>{mon.ten_mon}</option>)}
-              </select>
-            </div>
+      )}
 
-            <div className="col-md-2">
-              <label className="form-label text-secondary fw-bold">Miệng (1)</label>
-              <input type="number" step="0.1" min="0" max="10" className="form-control" value={form.diem_mieng} onChange={e => setForm({...form, diem_mieng: e.target.value})} />
-            </div>
-            
-            <div className="col-md-2">
-              <label className="form-label text-secondary fw-bold">15 Phút (1)</label>
-              <input type="number" step="0.1" min="0" max="10" className="form-control" value={form.diem_15_phut} onChange={e => setForm({...form, diem_15_phut: e.target.value})} />
-            </div>
-            
-            <div className="col-md-2">
-              <label className="form-label text-secondary fw-bold">1 Tiết (2)</label>
-              <input type="number" step="0.1" min="0" max="10" className="form-control" value={form.diem_1_tiet} onChange={e => setForm({...form, diem_1_tiet: e.target.value})} />
-            </div>
-            
-            <div className="col-md-2">
-              <label className="form-label text-secondary fw-bold">Thi HK (3)</label>
-              <input type="number" step="0.1" min="0" max="10" className="form-control" value={form.diem_thi} onChange={e => setForm({...form, diem_thi: e.target.value})} />
-            </div>
-
-            <div className="col-md-4 d-flex align-items-end gap-2">
-              <button type="submit" className={`btn ${idDangSua ? 'btn-warning' : 'btn-info'} text-white w-100 fw-bold fs-6 shadow-sm`}>
-                {idDangSua ? '💾 Cập Nhật' : '💾 Lưu Điểm Học Sinh'}
-              </button>
-              {idDangSua && <button type="button" className="btn btn-secondary fw-bold" onClick={() => { setIdDangSua(null); setForm({ hoc_sinh_id: '', mon_hoc_id: '', diem_mieng: '', diem_15_phut: '', diem_1_tiet: '', diem_thi: '' }); }}>Hủy</button>}
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <div className="card shadow-sm">
+      {/* ========================================== */}
+      {/* BẢNG LỊCH SỬ TỔNG HỢP (XEM & XÓA)          */}
+      {/* ========================================== */}
+      <h5 className="text-secondary fw-bold mb-3">BẢNG TỔNG HỢP KẾT QUẢ</h5>
+      <div className="card shadow-sm border-0">
         <table className="table table-hover mb-0 text-center">
-          <thead className="table-dark">
+          <thead className="table-secondary">
             <tr>
               <th className="text-start">Học Sinh</th>
               <th>Môn</th>
@@ -139,9 +216,9 @@ const DiemSo = () => {
               <th>15 Phút</th>
               <th>1 Tiết</th>
               <th>Thi</th>
-              <th className="text-warning">ĐTB</th>
+              <th className="text-danger">ĐTB</th>
               <th>Xếp Loại</th>
-              <th>Thao Tác</th>
+              {userRole !== 'student' && <th>Xóa</th>}
             </tr>
           </thead>
           <tbody>
@@ -149,13 +226,13 @@ const DiemSo = () => {
               <tr key={diem.id} className="align-middle">
                 <td className="text-start fw-bold text-primary">{diem.hoc_sinh?.ho_ten}</td>
                 <td className="fw-bold">{diem.mon_hoc?.ten_mon}</td>
-                <td>{diem.diem_mieng ?? '0'}</td>
-                <td>{diem.diem_15_phut ?? '0'}</td>
-                <td>{diem.diem_1_tiet ?? '0'}</td>
-                <td>{diem.diem_thi ?? '0'}</td>
+                <td>{diem.diem_mieng ?? '-'}</td>
+                <td>{diem.diem_15_phut ?? '-'}</td>
+                <td>{diem.diem_1_tiet ?? '-'}</td>
+                <td>{diem.diem_thi ?? '-'}</td>
                 <td className="fw-bold text-danger fs-5">{diem.diem_trung_binh}</td>
                 <td>
-                  <span className={`badge p-2 fs-6 shadow-sm ${
+                  <span className={`badge p-2 shadow-sm ${
                     diem.xep_loai === 'Giỏi' ? 'bg-success' : 
                     diem.xep_loai === 'Khá' ? 'bg-primary' : 
                     diem.xep_loai === 'Trung bình' ? 'bg-warning text-dark' : 'bg-danger'
@@ -163,13 +240,13 @@ const DiemSo = () => {
                     {diem.xep_loai}
                   </span>
                 </td>
-                <td>
-                  <div className="d-flex gap-1 justify-content-center">
-                    {/* NÚT SỬA TÔI THÊM VÀO ĐÂY NÈ TÈO */}
-                    <button className="btn btn-sm btn-outline-warning fw-bold" onClick={() => handleChonSua(diem)}>✏️ Sửa</button>
-                    <button className="btn btn-sm btn-outline-danger fw-bold" onClick={() => handleXoa(diem.id)}>🗑️ Xóa</button>
-                  </div>
-                </td>
+                
+                {/* Đã bỏ nút Sửa ở đây vì cô giáo chỉ cần Chọn lại Lớp/Môn ở trên là sửa được bảng điểm */}
+                {userRole !== 'student' && (
+                  <td>
+                    <button className="btn btn-sm btn-outline-danger fw-bold" onClick={() => handleXoa(diem.id)}>🗑️</button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

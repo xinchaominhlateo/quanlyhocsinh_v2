@@ -8,16 +8,39 @@ use Illuminate\Http\Request;
 class DiemSoController extends Controller
 {
     // 1. LẤY DANH SÁCH ĐIỂM
-    public function index()
+// 1. LẤY DANH SÁCH ĐIỂM (ĐÃ FIX PHÂN QUYỀN VÀ HIỂN THỊ)
+    public function index(Request $request)
     {
-        // Lấy điểm kèm theo tên học sinh và tên môn học để hiển thị ra bảng
-        $data = DiemSo::with(['hocSinh', 'monHoc'])->get();
-        return response()->json(['status' => 'success', 'data' => $data]);
-    }
+        // 1. Lấy thông tin user an toàn (auth('sanctum') giúp tránh lỗi 500 nếu mất token)
+        $user = auth('sanctum')->user() ?? $request->user();
 
-    // --- HÀM BÍ MẬT: TỰ ĐỘNG TÍNH TOÁN (ĐÃ FIX LỖI ÉP KIỂU) ---
-// --- HÀM BÍ MẬT: TỰ ĐỘNG TÍNH TOÁN VÀ CHUẨN HÓA DỮ LIỆU ---
-    private function tinhToanTuDong($request)
+        // 2. Chuẩn bị câu lệnh lấy điểm
+        $query = DiemSo::with(['hocSinh', 'monHoc']);
+
+        // 3. Phân quyền hiển thị
+        if ($user) {
+            if ($user->role === 'student') {
+                $query->whereHas('hocSinh', function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                });
+            } 
+            elseif ($user->role === 'teacher') {
+                $query->whereHas('monHoc', function ($q) use ($user) {
+                    $q->whereHas('giao_viens', function ($q2) use ($user) {
+                        $q2->where('user_id', $user->id);
+                    });
+                });
+            }
+        }
+
+        // 4. 👉 SỬ DỤNG LẠI get() THAY VÌ paginate() ĐỂ REACT KHÔNG BỊ LỖI MẤT DATA
+        $data = $query->latest()->get();
+        
+        return response()->json([
+            'status' => 'success', 
+            'data' => $data
+        ]);
+    }    private function tinhToanTuDong($request)
     {
         // 1. Ép kiểu để tính toán an toàn
         $mieng = (float)($request->diem_mieng ?? 0);
@@ -81,4 +104,29 @@ class DiemSoController extends Controller
         DiemSo::destroy($id);
         return response()->json(['status' => 'success']);
     }
+    public function storeBatch(Request $request) {
+    $request->validate([
+        'mon_hoc_id' => 'required',
+        'diem_data' => 'required|array' // Mảng chứa thông tin điểm của nhiều HS
+    ]);
+
+    foreach ($request->diem_data as $item) {
+        // Tận dụng hàm tính toán tự động đã viết hôm qua
+        $tempRequest = new Request($item);
+        $tempRequest->merge(['mon_hoc_id' => $request->mon_hoc_id]);
+        
+        $dataDaTinh = $this->tinhToanTuDong($tempRequest);
+
+        // Nếu đã có điểm môn này rồi thì cập nhật, chưa thì tạo mới
+        DiemSo::updateOrCreate(
+            [
+                'hoc_sinh_id' => $item['hoc_sinh_id'],
+                'mon_hoc_id' => $request->mon_hoc_id
+            ],
+            $dataDaTinh
+        );
+    }
+
+    return response()->json(['status' => 'success', 'message' => 'Đã lưu điểm cho cả lớp!']);
+}
 }

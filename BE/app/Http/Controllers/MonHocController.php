@@ -3,14 +3,33 @@
 namespace App\Http\Controllers;
 
 use App\Models\MonHoc;
+use App\Models\GiaoVien;
 use Illuminate\Http\Request;
 
 class MonHocController extends Controller
 {
-    public function index() {
-        return response()->json(['status' => 'success', 'data' => MonHoc::all()]);
-    }
+  public function index(Request $request) {
+        // Lấy người đang đăng nhập
+        $user = auth('sanctum')->user() ?? $request->user();
 
+        // NẾU LÀ GIÁO VIÊN: Chỉ lấy đúng 1 môn mà họ dạy
+        if ($user && $user->role === 'teacher') {
+            $giaoVien = GiaoVien::where('user_id', $user->id)->first();
+            
+            if ($giaoVien) {
+                // Trả về đúng môn của giáo viên đó (Dùng get() để React đổ vào mảng không bị lỗi)
+                $data = MonHoc::where('id', $giaoVien->mon_hoc_id)->get();
+            } else {
+                $data = [];
+            }
+        } 
+        // NẾU LÀ ADMIN HOẶC HỌC SINH: Cho xem toàn bộ danh sách môn
+        else {
+            $data = MonHoc::all();
+        }
+
+        return response()->json(['status' => 'success', 'data' => $data]);
+    }
     public function store(Request $request) {
         // 🛑 1. BẮT LỖI: Tên môn học không được trùng
         $request->validate([

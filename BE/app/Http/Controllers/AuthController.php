@@ -31,7 +31,8 @@ class AuthController extends Controller
                 'status' => 'success',
                 'message' => 'Đăng nhập thành công!',
                 'token' => $token, // Gửi vé về cho React
-                'user' => $user    // Gửi kèm thông tin user để hiện tên lên Sidebar
+                'user' => $user,    // Gửi kèm thông tin user để hiện tên lên Sidebar
+                'role' => $user->role
             ]);
         }
 

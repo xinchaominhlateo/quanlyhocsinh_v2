@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('hoc_sinhs', function (Blueprint $table) {
             $table->id();
-            
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // Thêm dòng này
             // Mã học sinh: Duy nhất, dùng để định danh xuyên suốt quá trình học
             $table->string('ma_hoc_sinh', 20)->unique(); 
             

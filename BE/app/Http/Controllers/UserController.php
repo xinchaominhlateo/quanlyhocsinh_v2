@@ -5,63 +5,63 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Auth; // Nhớ thêm dòng này để dùng Auth
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
-    // Lấy danh sách admin
-    public function index() {
-        return response()->json(['status' => 'success', 'data' => User::all()]);
+    // 1. Lấy thông tin tài khoản đang đăng nhập
+    public function profile(Request $request)
+    {
+        $user = $request->user();
+        
+        // Nếu là học sinh hoặc giáo viên, mình có thể lấy thêm thông tin chi tiết từ bảng liên quan
+        if ($user->role === 'student') {
+            $user->load('hocSinh');
+        } elseif ($user->role === 'teacher') {
+            $user->load('giaoVien');
+        }
+
+        return response()->json(['status' => 'success', 'data' => $user]);
     }
 
-    // Thêm Admin mới
-    public function store(Request $request) {
+    // 2. Lấy danh sách tất cả người dùng (Chỉ dành cho Admin)
+    public function index()
+    {
+        if (Auth::user()->role !== 'admin') {
+            return response()->json(['message' => 'Không có quyền truy cập'], 403);
+        }
+        
+        $users = User::orderBy('id', 'desc')->get();
+        return response()->json(['status' => 'success', 'data' => $users]);
+    }
+
+    // 3. Đổi mật khẩu cho người dùng hiện tại
+    public function changePassword(Request $request)
+    {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:6',
-        ], [
-            'email.unique' => 'Email này đã được đăng ký tài khoản rồi!',
-            'password.min' => 'Mật khẩu ít nhất phải 6 ký tự Tèo nhé!'
+            'old_password' => 'required',
+            'new_password' => 'required|min:6|confirmed',
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password), 
-            'role' => $request->role ?? 'admin',
-        ]);
+        $user = Auth::user();
 
-        return response()->json(['status' => 'success', 'message' => 'Đã tạo tài khoản admin!', 'data' => $user]);
+        if (!Hash::check($request->old_password, $user->password)) {
+            return response()->json(['message' => 'Mật khẩu cũ không chính xác'], 400);
+        }
+
+        $user->update(['password' => Hash::make($request->new_password)]);
+
+        return response()->json(['status' => 'success', 'message' => 'Đổi mật khẩu thành công!']);
     }
 
-    /**
-     * ✅ HÀM DESTROY ĐÃ NÂNG CẤP BẢO HIỂM
-     */
-    public function destroy($id) {
-        // 1. Kiểm tra tự sát: Lấy ID của ông đang đăng nhập để so sánh
-        if (Auth::id() == $id) {
-            return response()->json([
-                'status' => 'error', 
-                'message' => 'Không được xóa tài khoản đang đăng nhập nha!'
-            ], 400);
-        }
+    // 4. Admin Reset mật khẩu cho một tài khoản bất kỳ
+    public function resetPassword(Request $request, $id)
+    {
+        if (Auth::user()->role !== 'admin') return response()->json(['message' => 'Cấm'], 403);
 
-        // 2. Kiểm tra độc đạo: Đếm xem còn bao nhiêu ông Admin trong bảng
-        if (User::count() <= 1) {
-            return response()->json([
-                'status' => 'error', 
-                'message' => 'Hệ thống phải có ít nhất 1 Admin để quản lý, không được xóa hết đâu!'
-            ], 400);
-        }
-
-        // 3. Nếu vượt qua 2 bước trên thì mới tiến hành xóa
         $user = User::find($id);
-        if ($user) {
-            $user->delete();
-            return response()->json(['status' => 'success', 'message' => 'Đã xóa tài khoản thành công!']);
-        }
+        $user->update(['password' => Hash::make('123456')]);
 
-        return response()->json(['status' => 'error', 'message' => 'Không tìm thấy tài khoản này!'], 404);
+        return response()->json(['status' => 'success', 'message' => 'Mật khẩu đã về mặc định: 123456']);
     }
 }

@@ -1,127 +1,141 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { User, Lock, Shield, Key, RefreshCcw } from 'lucide-react';
 
 const TaiKhoan = () => {
-  const [danhSachUser, setDanhSachUser] = useState([]);
-  const [hienThiForm, setHienThiForm] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'admin' });
+  const [userData, setUserData] = useState(null);
+  const [allUsers, setAllUsers] = useState([]);
+  const [passwordForm, setPasswordForm] = useState({ old_password: '', new_password: '', new_password_confirmation: '' });
   
-  // ✅ 1. LẤY THÔNG TIN USER ĐANG ĐĂNG NHẬP
-  const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+  const userRole = localStorage.getItem('userRole') || 'student';
 
-  useEffect(() => { layDanhSach(); }, []);
+  useEffect(() => {
+    layThongTinCaNhan();
+    if (userRole === 'admin') layDanhSachUsers();
+  }, []);
 
-  const layDanhSach = () => {
-    axios.get('/users').then(res => setDanhSachUser(res.data.data));
+  const layThongTinCaNhan = () => {
+    axios.get('/user/profile').then(res => setUserData(res.data.data));
   };
 
-  const handleLuu = (e) => {
+  const layDanhSachUsers = () => {
+    axios.get('/users').then(res => setAllUsers(res.data.data));
+  };
+
+  const handleDoiMatKhau = (e) => {
     e.preventDefault();
-    axios.post('/users', form)
+    axios.post('/user/change-password', passwordForm)
       .then(() => {
-        Swal.fire('Thành công', 'Đã thêm quản trị viên mới!', 'success');
-        layDanhSach();
-        setHienThiForm(false);
-        setForm({ name: '', email: '', password: '', role: 'admin' });
+        Swal.fire('Thành công', 'Mật khẩu đã được thay đổi!', 'success');
+        setPasswordForm({ old_password: '', new_password: '', new_password_confirmation: '' });
       })
-      .catch(err => {
-        Swal.fire('Lỗi', err.response?.data?.message || 'Không thể tạo tài khoản', 'error');
-      });
+      .catch(err => Swal.fire('Lỗi', err.response.data.message, 'error'));
   };
 
-  const handleXoa = (id) => {
+  const handleAdminReset = (id) => {
     Swal.fire({
-      title: 'Xóa tài khoản này?',
-      text: "Hành động này không thể hoàn tác!",
+      title: 'Reset mật khẩu?',
+      text: "Mật khẩu sẽ trở về mặc định: 123456",
       icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Xác nhận xóa ',
-      cancelButtonText: 'Hủy'
-    }).then(res => {
-      if(res.isConfirmed) {
-        axios.delete(`/users/${id}`)
-          .then(res => {
-            Swal.fire('Đã xóa!', res.data.message, 'success');
-            layDanhSach();
-          })
-          .catch(err => {
-            // ✅ HIỆN LỖI TỪ BACKEND (Ví dụ: M định tự sát hả Tèo?)
-            Swal.fire('Thất bại', err.response?.data?.message || 'Có lỗi xảy ra', 'error');
-          });
+      showCancelButton: true
+    }).then(result => {
+      if (result.isConfirmed) {
+        axios.post(`/users/reset-password/${id}`).then(() => Swal.fire('Xong!', 'Đã reset thành công', 'success'));
       }
     });
   };
 
-  return (
-    <div className="container-fluid mb-5">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="text-primary fw-bold">🔐 QUẢN TRỊ VIÊN</h2>
-        <button className="btn btn-success fw-bold" onClick={() => setHienThiForm(!hienThiForm)}>
-          {hienThiForm ? "❌ Đóng" : "+ Thêm Admin"}
-        </button>
-      </div>
-
-      {hienThiForm && (
-        <div className="card shadow-sm mb-4 border-success">
-          <div className="card-body">
-            <form onSubmit={handleLuu} className="row align-items-end">
-              <div className="col-md-3 mb-3">
-                <label className="fw-bold">Tên hiển thị</label>
-                <input type="text" className="form-control border-success" value={form.name} onChange={e => setForm({...form, name: e.target.value})} required />
-              </div>
-              <div className="col-md-3 mb-3">
-                <label className="fw-bold">Email (Tên đăng nhập)</label>
-                <input type="email" className="form-control border-success" value={form.email} onChange={e => setForm({...form, email: e.target.value})} required />
-              </div>
-              <div className="col-md-3 mb-3">
-                <label className="fw-bold">Mật khẩu</label>
-                <input type="password" title="Ít nhất 6 ký tự" className="form-control border-success" value={form.password} onChange={e => setForm({...form, password: e.target.value})} required />
-              </div>
-              <div className="col-md-3 mb-3">
-                <button type="submit" className="btn btn-success w-100 fw-bold shadow-sm">💾 TẠO TÀI KHOẢN</button>
-              </div>
-            </form>
+  // ==========================================
+  // GIAO DIỆN ADMIN (QUẢN TRỊ DANH SÁCH)
+  // ==========================================
+  if (userRole === 'admin') {
+    return (
+      <div className="container-fluid">
+        <h2 className="text-primary fw-bold mb-4"><Shield size={28} className="me-2" />QUẢN TRỊ TÀI KHOẢN HỆ THỐNG</h2>
+        <div className="card shadow-sm border-0">
+          <div className="table-responsive">
+            <table className="table table-hover align-middle mb-0 text-center">
+              <thead className="table-dark">
+                <tr>
+                  <th>ID</th>
+                  <th className="text-start">Tên Người Dùng</th>
+                  <th>Email</th>
+                  <th>Vai Trò</th>
+                  <th>Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allUsers.map(u => (
+                  <tr key={u.id}>
+                    <td>{u.id}</td>
+                    <td className="text-start fw-bold">{u.name}</td>
+                    <td>{u.email}</td>
+                    <td><span className={`badge ${u.role === 'admin' ? 'bg-danger' : u.role === 'teacher' ? 'bg-primary' : 'bg-success'}`}>{u.role.toUpperCase()}</span></td>
+                    <td>
+                      <button className="btn btn-sm btn-outline-warning fw-bold" onClick={() => handleAdminReset(u.id)}>
+                        <RefreshCcw size={14} className="me-1" /> Reset Pass
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-      )}
+      </div>
+    );
+  }
 
-      <div className="card shadow-sm border-0">
-        <table className="table table-hover table-bordered mb-0">
-          <thead className="table-dark text-center">
-            <tr>
-              <th style={{ width: '80px' }}>ID</th>
-              <th>Tên Quản Trị</th>
-              <th>Email</th>
-              <th>Quyền</th>
-              <th>Hành Động</th>
-            </tr>
-          </thead>
-          <tbody className="text-center">
-            {danhSachUser.map(u => (
-              <tr key={u.id} className="align-middle">
-                <td>{u.id}</td>
-                <td className="fw-bold text-primary text-start px-4">
-                  {u.name} {u.id === currentUser.id && <span className="badge bg-warning text-dark ms-2">Tài khoản của bạn</span>}
-                </td>
-                <td>{u.email}</td>
-                <td><span className="badge bg-info">{u.role}</span></td>
-                <td>
-                  {/* ✅ CHỖ SỬA QUAN TRỌNG: KIỂM TRA ID ĐỂ ẨN NÚT XÓA */}
-                  {u.id !== currentUser.id ? (
-                    <button className="btn btn-sm btn-outline-danger px-3 fw-bold" onClick={() => handleXoa(u.id)}>
-                      Xóa
-                    </button>
-                  ) : (
-                    <span className="text-muted small italic">Không thể xóa chính mình</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+  // ==========================================
+  // GIAO DIỆN GIÁO VIÊN & HỌC SINH (HỒ SƠ CÁ NHÂN)
+  // ==========================================
+  return (
+    <div className="container-fluid">
+      <h2 className="text-primary fw-bold mb-4"><User size={28} className="me-2" />THÔNG TIN TÀI KHOẢN</h2>
+      <div className="row">
+        {/* Cột trái: Thông tin cá nhân */}
+        <div className="col-md-5 mb-4">
+          <div className="card border-0 shadow-sm text-center p-4">
+            <div className="mx-auto mb-3 bg-light rounded-circle d-flex align-items-center justify-content-center" style={{width: '80px', height: '80px'}}>
+               <User size={40} className="text-primary" />
+            </div>
+            <h4 className="fw-bold mb-1">{userData?.name}</h4>
+            <p className="text-muted">{userData?.email}</p>
+            <hr />
+            <div className="text-start">
+              <p><strong>Quyền:</strong> <span className="badge bg-info text-dark">{userRole.toUpperCase()}</span></p>
+              {userRole === 'student' && <p><strong>Mã học sinh:</strong> {userData?.hoc_sinh?.ma_hoc_sinh}</p>}
+              {userRole === 'teacher' && <p><strong>Mã giáo viên:</strong> {userData?.giao_vien?.ma_giao_vien}</p>}
+            </div>
+          </div>
+        </div>
+
+        {/* Cột phải: Đổi mật khẩu */}
+        <div className="col-md-7">
+          <div className="card border-0 shadow-sm">
+            <div className="card-header bg-white fw-bold border-0 pt-3">
+               <Lock size={18} className="me-2" /> ĐỔI MẬT KHẨU
+            </div>
+            <div className="card-body">
+              <form onSubmit={handleDoiMatKhau}>
+                <div className="mb-3">
+                  <label className="form-label">Mật khẩu cũ</label>
+                  <input type="password" name="old_password" placeholder="Nhập mật khẩu hiện tại" className="form-control" value={passwordForm.old_password} onChange={e => setPasswordForm({...passwordForm, old_password: e.target.value})} required />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label">Mật khẩu mới</label>
+                  <input type="password" name="new_password" placeholder="Tối thiểu 6 ký tự" className="form-control" value={passwordForm.new_password} onChange={e => setPasswordForm({...passwordForm, new_password: e.target.value})} required />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label">Xác nhận mật khẩu mới</label>
+                  <input type="password" name="new_password_confirmation" placeholder="Nhập lại mật khẩu mới" className="form-control" value={passwordForm.new_password_confirmation} onChange={e => setPasswordForm({...passwordForm, new_password_confirmation: e.target.value})} required />
+                </div>
+                <button type="submit" className="btn btn-primary w-100 fw-bold"><Key size={18} className="me-2" />CẬP NHẬT MẬT KHẨU</button>
+              </form>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

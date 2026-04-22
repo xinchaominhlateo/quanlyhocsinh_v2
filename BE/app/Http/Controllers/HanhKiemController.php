@@ -12,12 +12,29 @@ class HanhKiemController extends Controller
     /**
      * Lấy danh sách kèm thông tin học sinh
      */
-    public function index()
+   public function index(Request $request)
     {
-        $data = HanhKiem::with('hocSinh')->get();
-        return response()->json(['status' => 'success', 'data' => $data]);
-    }
+        // Lấy thông tin người đang đăng nhập
+        $user = auth('sanctum')->user() ?? $request->user();
 
+        // Khởi tạo query kèm thông tin học sinh
+        $query = HanhKiem::with('hoc_sinh');
+
+        // PHÂN QUYỀN: Nếu là học sinh, chỉ lấy hạnh kiểm của chính mình
+        if ($user && $user->role === 'student') {
+            $query->whereHas('hoc_sinh', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            });
+        }
+        // Admin hoặc Giáo viên thì xem được hết (hoặc bạn có thể lọc tiếp cho GV theo lớp)
+
+        $data = $query->latest()->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $data
+        ]);
+    }
     /**
      * Lưu đánh giá mới
      */

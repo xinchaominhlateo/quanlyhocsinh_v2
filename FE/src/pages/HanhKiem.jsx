@@ -6,7 +6,10 @@ const HanhKiem = () => {
   const [danhSachHK, setDanhSachHK] = useState([]);
   const [danhSachHS, setDanhSachHS] = useState([]);
   const [hienThiForm, setHienThiForm] = useState(false);
-  const [idDangSua, setIdDangSua] = useState(null); // STATE MỚI: Theo dõi xem có đang sửa không
+  const [idDangSua, setIdDangSua] = useState(null); 
+
+  // 👉 LẤY QUYỀN TỪ LOCALSTORAGE
+  const userRole = localStorage.getItem('userRole') || 'student';
 
   const [form, setForm] = useState({ hoc_sinh_id: '', hoc_ki: '1', loai: 'Tốt', nhan_xet: '' });
 
@@ -16,19 +19,20 @@ const HanhKiem = () => {
 
   const layDuLieu = () => {
     axios.get('/hanhkiem').then(res => setDanhSachHK(res.data.data));
-    axios.get('/hocsinh').then(res => setDanhSachHS(res.data.data));
+    // 👉 TỐI ƯU: Chỉ tải danh sách học sinh nếu người dùng là Admin hoặc Giáo viên
+    if (userRole !== 'student') {
+        axios.get('/hocsinh').then(res => setDanhSachHS(res.data.data));
+    }
   };
 
-  // ✅ LOGIC ĐÃ NÂNG CẤP: Nếu đang sửa, bỏ qua việc lọc chính bản ghi đó để Tên học sinh vẫn hiện trên select
   const dsHocSinhChuaXepLoai = danhSachHS.filter(hs => 
     !danhSachHK.some(hk => 
       hk.hoc_sinh_id === hs.id && 
       String(hk.hoc_ki) === String(form.hoc_ki) && 
-      hk.id !== idDangSua // Trừ cái đang sửa ra
+      hk.id !== idDangSua
     )
   );
 
-  // HÀM MỚI: Bấm nút sửa để đưa dữ liệu lên form
   const handleChonSua = (hk) => {
     setIdDangSua(hk.id);
     setForm({
@@ -37,13 +41,11 @@ const HanhKiem = () => {
       loai: hk.loai,
       nhan_xet: hk.nhan_xet || ''
     });
-    setHienThiForm(true); // Mở form lên
+    setHienThiForm(true); 
   };
 
   const handleLuu = (e) => {
     e.preventDefault();
-    
-    // Nếu có idDangSua thì gọi API PUT, không thì POST
     const action = idDangSua ? axios.put(`/hanhkiem/${idDangSua}`, form) : axios.post('/hanhkiem', form);
 
     action.then(() => {
@@ -63,7 +65,6 @@ const HanhKiem = () => {
       });
   };
 
-  // HÀM MỚI: Xóa trắng form và tắt chế độ sửa
   const resetForm = () => {
     setForm({ hoc_sinh_id: '', hoc_ki: '1', loai: 'Tốt', nhan_xet: '' });
     setIdDangSua(null);
@@ -87,16 +88,21 @@ const HanhKiem = () => {
     <div className="container-fluid mb-5">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2 className="text-primary fw-bold">🎖️ QUẢN LÝ HẠNH KIỂM</h2>
-        <button className={`btn fw-bold ${hienThiForm && !idDangSua ? 'btn-secondary' : 'btn-success'}`} 
-                onClick={() => {
-                  setHienThiForm(!hienThiForm);
-                  if (hienThiForm) resetForm(); // Đóng form thì reset luôn
-                }}>
-          {hienThiForm && !idDangSua ? "❌ Đóng Form" : "+ Đánh giá mới"}
-        </button>
+        
+        {/* 👉 ĐIỀU KIỆN 1: Ẩn nút Thêm Đánh Giá nếu là Học sinh */}
+        {userRole !== 'student' && (
+            <button className={`btn fw-bold ${hienThiForm && !idDangSua ? 'btn-secondary' : 'btn-success'}`} 
+                    onClick={() => {
+                      setHienThiForm(!hienThiForm);
+                      if (hienThiForm) resetForm(); 
+                    }}>
+              {hienThiForm && !idDangSua ? "❌ Đóng Form" : "+ Đánh giá mới"}
+            </button>
+        )}
       </div>
 
-      {hienThiForm && (
+      {/* 👉 ĐIỀU KIỆN 2: Ép thêm điều kiện chặn Form cho chắc chắn */}
+      {userRole !== 'student' && hienThiForm && (
         <div className={`card shadow-sm mb-4 border-${idDangSua ? 'warning' : 'primary'}`}>
           <div className={`card-header text-white fw-bold bg-${idDangSua ? 'warning text-dark' : 'primary'}`}>
             {idDangSua ? '✏️ Sửa Đánh Giá Hạnh Kiểm' : '📝 Nhập Đánh Giá Hạnh Kiểm'}
@@ -109,7 +115,7 @@ const HanhKiem = () => {
                 <select className={`form-select border-${idDangSua ? 'warning' : 'primary'}`} 
                         value={form.hoc_ki} 
                         onChange={e => setForm({...form, hoc_ki: e.target.value, hoc_sinh_id: ''})}
-                        disabled={!!idDangSua} // Khi sửa thì khóa Học Kỳ lại cho an toàn
+                        disabled={!!idDangSua} 
                 >
                   <option value="1">Học kỳ 1</option>
                   <option value="2">Học kỳ 2</option>
@@ -122,7 +128,7 @@ const HanhKiem = () => {
                         value={form.hoc_sinh_id}
                         onChange={e => setForm({...form, hoc_sinh_id: e.target.value})} 
                         required
-                        disabled={!!idDangSua} // Khi sửa thì khóa luôn Học Sinh
+                        disabled={!!idDangSua} 
                 >
                   <option value="">-- Chọn học sinh --</option>
                   {dsHocSinhChuaXepLoai.map(hs => (
@@ -184,7 +190,8 @@ const HanhKiem = () => {
                 <th>Học Kỳ</th>
                 <th>Xếp Loại</th>
                 <th>Nhận Xét</th>
-                <th>Hành Động</th>
+                {/* 👉 ĐIỀU KIỆN 3: Ẩn cột Thao Tác nếu là Học sinh */}
+                {userRole !== 'student' && <th>Hành Động</th>}
               </tr>
             </thead>
             <tbody className="text-center">
@@ -204,13 +211,16 @@ const HanhKiem = () => {
                       </span>
                     </td>
                     <td className="text-muted small">{hk.nhan_xet || '---'}</td>
-                    <td>
-                      {/* THÊM NÚT SỬA VÀO ĐÂY */}
-                      <button className="btn btn-sm btn-outline-warning fw-bold me-2" 
-                              onClick={() => handleChonSua(hk)}>Sửa</button>
-                      <button className="btn btn-sm btn-outline-danger fw-bold" 
-                              onClick={() => handleXoa(hk.id)}>Xóa</button>
-                    </td>
+                    
+                    {/* 👉 ĐIỀU KIỆN 4: Ẩn nút Sửa/Xóa nếu là Học sinh */}
+                    {userRole !== 'student' && (
+                        <td>
+                        <button className="btn btn-sm btn-outline-warning fw-bold me-2" 
+                                onClick={() => handleChonSua(hk)}>Sửa</button>
+                        <button className="btn btn-sm btn-outline-danger fw-bold" 
+                                onClick={() => handleXoa(hk.id)}>Xóa</button>
+                        </td>
+                    )}
                   </tr>
                 ))
               ) : (

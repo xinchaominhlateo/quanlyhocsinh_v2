@@ -22,15 +22,10 @@ use App\Http\Controllers\UserController;
 |--------------------------------------------------------------------------
 */
 
-// 🛑 1. Tuyến đường Login (Mở cho tất cả mọi người)
+// 🛑 1. Tuyến đường Login (Mở cho tất cả mọi người không cần đăng nhập)
 Route::post('/login', [AuthController::class, 'login']);
 
-// 🛑 2. Quản lý Tài khoản Admin (T đổi thành /users có chữ 's' để tránh lỗi POST m vừa gặp)
-Route::get('/users', [UserController::class, 'index']);
-Route::post('/users', [UserController::class, 'store']);
-Route::delete('/users/{id}', [UserController::class, 'destroy']);
-
-// 🛑 3. Các Resource API chuẩn
+// 🛑 2. Các Resource API chuẩn
 Route::apiResource('hocsinh', HocSinhController::class);
 Route::apiResource('lophoc', LopHocController::class);
 Route::apiResource('monhoc', MonHocController::class);
@@ -39,11 +34,30 @@ Route::apiResource('hanhkiem', HanhKiemController::class);
 Route::apiResource('hocphi', HocPhiController::class);
 Route::apiResource('giaovien', GiaoVienController::class);
 
-// 🛑 4. Các route chức năng riêng
+// 🛑 3. Các route chức năng riêng
 Route::get('/phancong', [PhanCongController::class, 'index']);
 Route::post('/phancong', [PhanCongController::class, 'store']);
 Route::delete('/phancong/{lop_id}/{gv_id}', [PhanCongController::class, 'destroy']);
 Route::get('/dashboard-stats', [DashboardController::class, 'index']);
 
-// 🛑 5. Tuyến đường Logout (Bắt buộc phải đang đăng nhập)
-Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
+// 🛑 4. NHÓM ROUTE BẢO MẬT BẮT BUỘC ĐĂNG NHẬP (auth:sanctum)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/my-classes', [GiaoVienController::class, 'myClasses']);
+    
+    // Tuyến đường Logout
+    Route::post('/logout', [AuthController::class, 'logout']);
+
+    // API Thông tin tài khoản (Profile & Đổi mật khẩu)
+    Route::get('/user/profile', [UserController::class, 'profile']);
+    Route::post('/user/change-password', [UserController::class, 'changePassword']);
+
+    // API Quản lý tài khoản dành cho Admin
+    Route::get('/users', [UserController::class, 'index']); 
+    Route::post('/users/reset-password/{id}', [UserController::class, 'resetPassword']);
+    
+    // (Giữ lại các route cũ của bạn để không bị lỗi nếu có chức năng thêm/xóa Admin)
+    Route::post('/users', [UserController::class, 'store']);
+    Route::delete('/users/{id}', [UserController::class, 'destroy']);
+    Route::post('/diemso/batch', [DiemSoController::class, 'storeBatch']);
+
+});
