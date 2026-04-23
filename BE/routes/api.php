@@ -41,30 +41,37 @@ Route::delete('/phancong/{lop_id}/{gv_id}', [PhanCongController::class, 'destroy
 Route::get('/dashboard-stats', [DashboardController::class, 'index']);
 
 // 🛑 4. NHÓM ROUTE BẢO MẬT BẮT BUỘC ĐĂNG NHẬP (auth:sanctum)
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/my-classes', [GiaoVienController::class, 'myClasses']);
-// Báo Cáo Thống Kê
-    Route::get('/thong-ke/tong-quan', [\App\Http\Controllers\ThongKeController::class, 'getTongQuan']);
-    Route::apiResource('donnghiphep', \App\Http\Controllers\DonNghiPhepController::class);
-    // Tuyến đường Logout
-    // In Phiếu Liên Lạc
-    Route::get('/phieulienlac/lop/{lop_id}', [\App\Http\Controllers\PhieuLienLacController::class, 'getHocSinhTheoLop']);
-    Route::get('/phieulienlac/chitiet/{hoc_sinh_id}', [\App\Http\Controllers\PhieuLienLacController::class, 'getChiTietPhieu']);
-    Route::post('/logout', [AuthController::class, 'logout']);
-// Quản lý Điểm Danh
-    Route::post('/diemdanh/danhsach', [\App\Http\Controllers\DiemDanhController::class, 'layDanhSach']);
-    Route::post('/diemdanh/luu', [\App\Http\Controllers\DiemDanhController::class, 'luuDiemDanh']);
-    // API Thông tin tài khoản (Profile & Đổi mật khẩu)
-    Route::get('/user/profile', [UserController::class, 'profile']);
-    Route::post('/user/change-password', [UserController::class, 'changePassword']);
+// ... giữ lại phần login bên trên ...
 
-    // API Quản lý tài khoản dành cho Admin
-    Route::get('/users', [UserController::class, 'index']); 
-    Route::post('/users/reset-password/{id}', [UserController::class, 'resetPassword']);
+Route::middleware('auth:sanctum')->group(function () {
+    // NHÓM QUẢN LÝ (Chủ yếu cho Giáo vụ/Admin)
+    Route::apiResource('hocsinh', HocSinhController::class);
+    Route::apiResource('lophoc', LopHocController::class);
+    Route::apiResource('monhoc', MonHocController::class);
+    Route::apiResource('giaovien', GiaoVienController::class);
     
-    // (Giữ lại các route cũ của bạn để không bị lỗi nếu có chức năng thêm/xóa Admin)
+    // PHÂN CÔNG GIẢNG DẠY
+    Route::get('/phancong', [PhanCongController::class, 'index']);
+    Route::post('/phancong', [PhanCongController::class, 'store']);
+    Route::delete('/phancong/{lop_id}/{gv_id}', [PhanCongController::class, 'destroy']);
+
+    // NGHIỆP VỤ GIÁO VIÊN
+    Route::apiResource('diemso', DiemSoController::class);
+    Route::apiResource('hanhkiem', HanhKiemController::class);
+    Route::post('/diemso/batch', [DiemSoController::class, 'storeBatch']);
+    Route::get('/my-classes', [GiaoVienController::class, 'myClasses']);
+    Route::get('/phieulienlac/lop/{lop_id}', [PhieuLienLacController::class, 'getHocSinhTheoLop']);
+    Route::get('/phieulienlac/chitiet/{hoc_sinh_id}', [PhieuLienLacController::class, 'getChiTietPhieu']);
+
+    // THỐNG KÊ (BGH/Giáo vụ)
+    Route::get('/thong-ke/tong-quan', [ThongKeController::class, 'getTongQuan']);
+
+    // QUẢN LÝ TÀI KHOẢN (Admin)
+    Route::get('/users', [UserController::class, 'index']);
     Route::post('/users', [UserController::class, 'store']);
     Route::delete('/users/{id}', [UserController::class, 'destroy']);
-    Route::post('/diemso/batch', [DiemSoController::class, 'storeBatch']);
-
+    Route::post('/users/reset-password/{id}', [UserController::class, 'resetPassword']);
+    
+    Route::get('/user/profile', [UserController::class, 'profile']);
+    Route::post('/logout', [AuthController::class, 'logout']);
 });

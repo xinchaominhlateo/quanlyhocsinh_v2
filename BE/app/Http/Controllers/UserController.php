@@ -65,3 +65,86 @@ class UserController extends Controller
         return response()->json(['status' => 'success', 'message' => 'Mật khẩu đã về mặc định: 123456']);
     }
 }
+// 5. Admin tạo tài khoản mới
+    public function store(Request $request)
+    {
+        // Kiểm tra quyền
+        if (Auth::user()->role !== 'admin') {
+            return response()->json(['message' => 'Không có quyền truy cập'], 403);
+        }
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'role' => 'required|in:admin,bgh,giaovu,teacher',
+            'password' => 'required|min:6'
+        ], [
+            'email.unique' => 'Email này đã tồn tại trong hệ thống.',
+            'password.min' => 'Mật khẩu phải có ít nhất 6 ký tự.'
+        ]);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'role' => $request->role,
+            'password' => Hash::make($request->password),
+        ]);
+
+        return response()->json(['status' => 'success', 'message' => 'Tạo tài khoản thành công', 'data' => $user]);
+    }
+
+    // 6. Admin xóa tài khoản
+    public function destroy($id)
+    {
+        if (Auth::user()->role !== 'admin') {
+            return response()->json(['message' => 'Không có quyền truy cập'], 403);
+        }
+
+        $user = User::find($id);
+        if (!$user) {
+            return response()->json(['message' => 'Không tìm thấy tài khoản'], 404);
+        }
+
+        // Chống lỗi: Không cho phép Admin tự xóa chính mình
+        if ($user->id === Auth::id()) {
+            return response()->json(['message' => 'Không thể tự xóa chính mình!'], 400);
+        }
+
+        $user->delete();
+        return response()->json(['status' => 'success', 'message' => 'Đã xóa tài khoản thành công!']);
+    }
+    // Admin tạo tài khoản mới
+    public function store(Request $request)
+    {
+        if (auth()->user()->role !== 'admin') return response()->json(['message' => 'Cấm'], 403);
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'role' => 'required|in:admin,bgh,giaovu,teacher',
+            'password' => 'required|min:6'
+        ]);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'role' => $request->role,
+            'password' => Hash::make($request->password),
+        ]);
+
+        return response()->json(['status' => 'success', 'message' => 'Tạo tài khoản thành công!']);
+    }
+
+    // Admin xóa tài khoản
+    public function destroy($id)
+    {
+        if (auth()->user()->role !== 'admin') return response()->json(['message' => 'Cấm'], 403);
+        
+        $user = User::find($id);
+        if (!$user || $user->id === auth()->id()) {
+            return response()->json(['message' => 'Không thể xóa tài khoản này'], 400);
+        }
+
+        $user->delete();
+        return response()->json(['status' => 'success', 'message' => 'Đã xóa tài khoản!']);
+    }

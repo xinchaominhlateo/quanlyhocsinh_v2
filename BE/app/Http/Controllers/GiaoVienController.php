@@ -117,8 +117,20 @@ class GiaoVienController extends Controller
     // 6. LẤY DANH SÁCH LỚP DO GIÁO VIÊN ĐÓ PHỤ TRÁCH (DÙNG ĐỂ NHẬP ĐIỂM)
 public function myClasses(Request $request) 
     {
-        // Kệ giáo viên là ai, cứ lôi TẤT CẢ các lớp có trong trường ra trả về!
-        $lops = \App\Models\LopHoc::all();
+        // 1. Lấy thông tin tài khoản đang đăng nhập
+        $user = $request->user();
+        
+        // 2. Tìm thông tin Giáo viên dựa vào user_id
+        $gv = GiaoVien::where('user_id', $user->id)->first();
+        
+        // Nếu tài khoản này chưa được liên kết với Giáo viên nào
+        if (!$gv) {
+            return response()->json(['status' => 'success', 'data' => []]);
+        }
+        
+        // 3. Gọi qua bảng phân công (Relationship lopHocs) để lấy các lớp MÀ GIÁO VIÊN NÀY DẠY
+        $lops = $gv->lopHocs; 
+        
         return response()->json(['status' => 'success', 'data' => $lops]);
     }
     }

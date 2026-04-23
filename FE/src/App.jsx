@@ -19,6 +19,7 @@ import XinNghiPhep from './pages/XinNghiPhep';
 import DiemDanh from './pages/DiemDanh';
 import PhieuLienLac from './pages/PhieuLienLac';
 import ThongKe from './pages/ThongKe';
+import QuanLyTaiKhoan from './pages/QuanLyTaiKhoan';
 function App() {
   const [isAuth, setIsAuth] = useState(false);
 
@@ -61,6 +62,7 @@ function App() {
             <Route path="/diem-danh" element={<DiemDanh />} />
             <Route path="/phieu-lien-lac" element={<PhieuLienLac />} />
             <Route path="/thong-ke" element={<ThongKe />} />
+            <Route path="/tai-khoan-he-thong" element={<QuanLyTaiKhoan />} />
             {/* Nếu gõ sai đường dẫn, tự quay về dashboard */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

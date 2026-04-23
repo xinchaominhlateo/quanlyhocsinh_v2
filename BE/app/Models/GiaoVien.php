@@ -13,6 +13,7 @@ protected $fillable = ['ma_giao_vien','gioi_tinh', 'ho_ten', 'email', 'sdt', 'mo
     }
     // Một giáo viên dạy nhiều lớp
     public function lopHocs() {
-        return $this->belongsToMany(LopHoc::class, 'giao_vien_lop_hoc');
+        // Chỉ định rõ tên bảng và 2 cột nối với nhau
+        return $this->belongsToMany(LopHoc::class, 'giao_vien_lop_hoc', 'giao_vien_id', 'lop_hoc_id');
     }
 }
