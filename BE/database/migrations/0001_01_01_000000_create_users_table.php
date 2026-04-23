@@ -12,14 +12,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->enum('role', ['admin', 'teacher', 'student'])->default('student');
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
-            $table->rememberToken();
-            $table->timestamps();
+          $table->id();
+        $table->string('name');
+        $table->string('email')->unique();
+        // CHỈ GIỮ LẠI MỘT DÒNG ROLE NÀY:
+        // Sử dụng string để linh hoạt hơn hoặc enum với đúng các quyền bạn dùng ở FE
+        $table->string('role')->default('admin'); 
+        $table->timestamp('email_verified_at')->nullable();
+        $table->string('password');
+        $table->rememberToken();
+        $table->timestamps();
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

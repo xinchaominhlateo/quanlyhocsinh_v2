@@ -17,15 +17,30 @@ const DiemSo = () => {
 
   useEffect(() => { layDuLieu(); }, []);
 
-  const layDuLieu = () => {
-    axios.get('/diemso').then(res => setDanhSachDiem(res.data.data || [])).catch(err => console.log(err));
-    if (userRole !== 'student') {
+ // FE/src/pages/DiemSo.jsx
+
+const layDuLieu = () => {
+  axios.get('/diemso').then(res => setDanhSachDiem(res.data.data || [])).catch(err => console.log(err));
+
+  if (userRole !== 'student') {
+    axios.get('/hocsinh').then(res => setDanhSachHS(res.data.data || [])).catch(err => console.log(err));
+    
+    if (userRole === 'teacher') {
+      // Gọi API my-classes để lấy cả Lớp và Môn của GV
+      axios.get('/my-classes').then(res => {
+        setDanhSachLop(res.data.data || []);
+        if (res.data.mon_hoc) {
+          setDanhSachMon([res.data.mon_hoc]); // Chỉ hiện duy nhất môn của GV đó
+          setSelectedMon(res.data.mon_hoc.id); // Tự động chọn luôn môn đó
+        }
+      }).catch(err => console.log(err));
+    } else {
+      // Admin hoặc vai trò khác thì lấy full
       axios.get('/monhoc').then(res => setDanhSachMon(res.data.data || [])).catch(err => console.log(err));
-      axios.get('/hocsinh').then(res => setDanhSachHS(res.data.data || [])).catch(err => console.log(err));
-      const apiLop = userRole === 'teacher' ? '/my-classes' : '/lophoc';
-      axios.get(apiLop).then(res => setDanhSachLop(res.data.data || [])).catch(err => console.log(err));
+      axios.get('/lophoc').then(res => setDanhSachLop(res.data.data || [])).catch(err => console.log(err));
     }
-  };
+  }
+};
 
   useEffect(() => {
     if (selectedLop && selectedMon) {

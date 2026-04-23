@@ -22,9 +22,9 @@ const Sidebar = ({ setAuth }) => {
 
     // --- 2. GIÁO VỤ (Đã bỏ bớt 2 mục trên) ---
     { path: '/hoc-sinh', name: 'Quản Lý Học Sinh', icon: <Users size={20} />, roles: ['giaovu'] }, 
-    { path: '/giao-vien', name: 'Quản Lý Giáo Viên', icon: <GraduationCap size={20} />, roles: ['giaovu'] },
+    { path: '/giao-vien', name: 'Quản Lý Giáo Viên', icon: <GraduationCap size={20} />, roles: ['admin'] },
     { path: '/lop-hoc', name: 'Quản Lý Lớp Học', icon: <Library size={20} />, roles: ['giaovu'] },
-    { path: '/phan-cong', name: 'Phân Công Giảng Dạy', icon: <Calendar size={20} />, roles: ['giaovu'] },
+    { path: '/phan-cong', name: 'Phân Công Giảng Dạy', icon: <Calendar size={20} />, roles: ['admin'] },
     
     // --- 3. CHỈ BAN GIÁM HIỆU ĐƯỢC XEM ---
     { path: '/thong-ke', name: 'Báo Cáo Thống Kê', icon: <BarChart3 size={20} />, roles: ['bgh'] }, 

@@ -100,7 +100,7 @@ class UserController extends Controller
                 'email'        => $user->email,
                 'ma_giao_vien'   => 'GV' . str_pad($user->id, 4, '0', STR_PAD_LEFT), // Tự tạo mã GV kiểu GV0001
                 'sdt'          => '', // 👈 Bổ sung giá trị rỗng để tránh lỗi SQL
-                'mon_hoc_id'   => 1,  // 👈 Bổ sung ID môn học mặc định (đảm bảo ID này có trong bảng mon_hocs)
+                'mon_hoc_id'   => null,  // 👈 Bổ sung ID môn học mặc định (đảm bảo ID này có trong bảng mon_hocs)
                 // Các trường khác như sđt, địa chỉ để null hoặc mặc định
             ]);
         }

@@ -9,11 +9,19 @@ const Login = ({ setAuth }) => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
+      // 1. Gọi API login
       const res = await axios.post('/login', { email, password });
+      
+      // 2. Lưu token và role vào localStorage
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('userRole', res.data.role);
+      
+      // 3. Gán token vào header của axios cho các lần gọi sau
       axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
+      
+      // 4. Cập nhật trạng thái đăng nhập để chuyển vào Dashboard
       setAuth(true);
+      
       Swal.fire({
         icon: 'success',
         title: 'Chào mừng trở lại!',
@@ -22,20 +30,28 @@ const Login = ({ setAuth }) => {
         showConfirmButton: false
       });
     } catch (error) {
-      Swal.fire('Thất bại', 'Tài khoản hoặc mật khẩu không đúng', 'error');
+      // --- PHẦN SỬA ĐỂ DEBUG ---
+      // In toàn bộ lỗi ra Console để bạn kiểm tra (nhấn F12 chọn Console)
+      console.error("LỖI ĐĂNG NHẬP CHI TIẾT:", error.response);
+
+      // Lấy thông báo lỗi cụ thể từ Server (nếu có)
+      const errorMsg = error.response?.data?.message || 'Tài khoản hoặc mật khẩu không đúng';
+      
+      Swal.fire('Thất bại', errorMsg, 'error');
+      // -------------------------
     }
   };
 
   return (
     <div className="vh-100 d-flex align-items-center justify-content-center" 
          style={{ 
-           backgroundColor: '#f3f4f6', // Nền xám cực nhạt, dịu mắt
+           backgroundColor: '#f3f4f6', 
            fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
          }}>
       
       <div className="d-flex shadow-lg bg-white" style={{ width: '850px', borderRadius: '20px', overflow: 'hidden', minHeight: '500px' }}>
         
-        {/* Bên trái: Hình ảnh/Màu sắc trang trí */}
+        {/* Bên trái: Hình ảnh trang trí */}
         <div className="d-none d-md-flex col-md-6 align-items-center justify-content-center" 
              style={{ background: 'linear-gradient(45deg, #0ea5e9, #6366f1)' }}>
           <div className="text-center text-white p-4">

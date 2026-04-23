@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\GiaoVien;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB; // Thêm để dùng Transaction
 
 class GiaoVienController extends Controller
 {
@@ -16,10 +17,9 @@ class GiaoVienController extends Controller
         return response()->json(['status' => 'success', 'data' => $data]);
     }
 
-    // 2. THÊM MỚI GIÁO VIÊN
+    // 2. THÊM MỚI GIÁO VIÊN (Đã thêm Transaction để tránh lỗi tạo User rác)
     public function store(Request $request)
     {
-        // Bắt lỗi dữ liệu đầu vào
         $request->validate([
             'ho_ten' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email|unique:giao_viens,email',
@@ -32,27 +32,39 @@ class GiaoVienController extends Controller
             'sdt.digits_between' => 'Số điện thoại phải có độ dài từ 10 đến 11 số!',
         ]);
 
-        // Tạo tài khoản User để đăng nhập
-        $user = User::create([
-            'name' => $request->ho_ten,
-            'email' => $request->email,
-            'password' => Hash::make('123456'), // Mật khẩu mặc định
-            'role' => 'teacher' 
-        ]);
+        DB::beginTransaction(); // Bắt đầu Transaction
+        try {
+            // Tạo tài khoản User
+            $user = User::create([
+                'name' => $request->ho_ten,
+                'email' => $request->email,
+                'password' => Hash::make('123456'), 
+                'role' => 'teacher' 
+            ]);
 
-        $data = $request->all();
+            // Tự động sinh mã giáo viên
+            $namHienTai = date('Y');
+            $gvCuoi = GiaoVien::orderBy('id', 'desc')->first();
+            $soThuTu = $gvCuoi ? ($gvCuoi->id + 1) : 1;
+            $maTuDong = 'GV' . $namHienTai . str_pad($soThuTu, 4, '0', STR_PAD_LEFT);
 
-        // Tự động sinh mã giáo viên
-        $namHienTai = date('Y');
-        $gvCuoi = GiaoVien::orderBy('id', 'desc')->first();
-        $soThuTu = $gvCuoi ? ($gvCuoi->id + 1) : 1;
-        $maTuDong = 'GV' . $namHienTai . str_pad($soThuTu, 4, '0', STR_PAD_LEFT);
+            // Tạo thông tin giáo viên
+            $gv = GiaoVien::create([
+                'user_id' => $user->id,
+                'ma_giao_vien' => $maTuDong,
+                'ho_ten' => $request->ho_ten,
+                'email' => $request->email,
+                'sdt' => $request->sdt,
+                'mon_hoc_id' => $request->mon_hoc_id,
+            ]);
 
-        $data['ma_giao_vien'] = $maTuDong;
-        $data['user_id'] = $user->id; // Gắn ID tài khoản vào giáo viên
-        
-        $gv = GiaoVien::create($data);
-        return response()->json(['status' => 'success', 'data' => $gv]);
+            DB::commit(); // Lưu mọi thứ nếu thành công
+            return response()->json(['status' => 'success', 'data' => $gv]);
+
+        } catch (\Exception $e) {
+            DB::rollBack(); // Xóa sạch dữ liệu vừa tạo nếu có bất kỳ lỗi nào xảy ra
+            return response()->json(['status' => 'error', 'message' => 'Lỗi: ' . $e->getMessage()], 500);
+        }
     }
 
     // 3. XEM CHI TIẾT
@@ -82,11 +94,8 @@ class GiaoVienController extends Controller
             'sdt.numeric' => 'Số điện thoại phải là định dạng số!',
         ]);
 
-        // Cấm sửa mã giáo viên
-        $dataCapNhat = $request->except(['ma_giao_vien']);
-        $gv->update($dataCapNhat);
+        $gv->update($request->except(['ma_giao_vien']));
 
-        // 👉 ĐÃ TỐI ƯU: Đồng bộ cập nhật thông tin sang bảng User
         if ($gv->user_id) {
             User::where('id', $gv->user_id)->update([
                 'name' => $request->ho_ten,
@@ -105,7 +114,6 @@ class GiaoVienController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Giáo viên không tồn tại!'], 404);
         }
 
-        // 👉 ĐÃ TỐI ƯU: Xóa tận gốc tài khoản đăng nhập của giáo viên này
         if ($gv->user_id) {
             User::where('id', $gv->user_id)->delete();
         }
@@ -114,23 +122,29 @@ class GiaoVienController extends Controller
         return response()->json(['status' => 'success', 'message' => 'Đã xóa giáo viên thành công!']);
     }
 
-    // 6. LẤY DANH SÁCH LỚP DO GIÁO VIÊN ĐÓ PHỤ TRÁCH (DÙNG ĐỂ NHẬP ĐIỂM)
-public function myClasses(Request $request) 
+    // 6. LẤY LỚP VÀ MÔN CHO GIÁO VIÊN ĐANG ĐĂNG NHẬP (Đã sửa)
+    public function myClasses(Request $request) 
     {
-        // 1. Lấy thông tin tài khoản đang đăng nhập
         $user = $request->user();
         
-        // 2. Tìm thông tin Giáo viên dựa vào user_id
-        $gv = GiaoVien::where('user_id', $user->id)->first();
+        // Load kèm môn học của giáo viên này
+        $gv = GiaoVien::with('mon_hoc')->where('user_id', $user->id)->first();
         
-        // Nếu tài khoản này chưa được liên kết với Giáo viên nào
         if (!$gv) {
-            return response()->json(['status' => 'success', 'data' => []]);
+            return response()->json([
+                'status' => 'success', 
+                'data' => [], 
+                'mon_hoc' => null
+            ]);
         }
         
-        // 3. Gọi qua bảng phân công (Relationship lopHocs) để lấy các lớp MÀ GIÁO VIÊN NÀY DẠY
+        // Lấy danh sách các lớp đã được phân công
         $lops = $gv->lopHocs; 
         
-        return response()->json(['status' => 'success', 'data' => $lops]);
+        return response()->json([
+            'status' => 'success', 
+            'data' => $lops,
+            'mon_hoc' => $gv->mon_hoc // TRẢ VỀ MÔN HỌC RIÊNG CỦA GV NÀY
+        ]);
     }
-    }
+}

@@ -23,30 +23,28 @@ import QuanLyTaiKhoan from './pages/QuanLyTaiKhoan';
 import KetChuyenNamHoc from './pages/KetChuyenNamHoc';
 
 function App() {
-  // ✅ CẢI TIẾN: Kiểm tra token ngay lập tức để tránh hiện màn hình Login khi F5
+  // Kiểm tra trạng thái đăng nhập dựa trên token trong localStorage
   const [isAuth, setIsAuth] = useState(!!localStorage.getItem('token'));
 
   useEffect(() => {
-    axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
-
-    const token = localStorage.getItem('token');
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    }
-    axios.interceptors.response.use(
+    // Thiết lập Interceptor để bắt lỗi 401 (Hết hạn phiên đăng nhập)
+    const interceptor = axios.interceptors.response.use(
       response => response,
       error => {
         if (error.response && error.response.status === 401) {
-          localStorage.clear(); // Xóa sạch token "ma"
-          setIsAuth(false);     // Đẩy về trang Login
-          window.location.href = '/';
+          localStorage.clear(); // Xóa dữ liệu cũ
+          setIsAuth(false);     // Chuyển trạng thái về chưa đăng nhập
+        //  window.location.href = '/'; // Đẩy về trang chủ/đăng nhập
         }
         return Promise.reject(error);
       }
     );
-  }, [isAuth]);
 
-  // Nếu chưa đăng nhập -> Chỉ hiện Login
+    // Hủy bỏ interceptor khi component unmount để tránh rò rỉ bộ nhớ
+    return () => axios.interceptors.response.eject(interceptor);
+  }, []);
+
+  // Nếu chưa đăng nhập -> Hiển thị trang Login
   if (!isAuth) {
     return <Login setAuth={setIsAuth} />;
   }
@@ -58,15 +56,19 @@ function App() {
       <div className="d-flex">
         <Sidebar setAuth={setIsAuth} />
         
-        <div className="content p-4 w-100" style={{ marginLeft: '250px' }}> {/* Đảm bảo không bị Sidebar đè lên */}
+        {/* Nội dung chính, căn lề trái để không bị Sidebar che khuất */}
+        <div className="content p-4 w-100" style={{ marginLeft: '250px' }}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/hoc-sinh" element={<HocSinh />} />
-            <Route path="/giao-vien" element={<GiaoVien />} />
+            <Route 
+  path="/giao-vien" 
+  element={userRole === 'admin' ? <GiaoVien /> : <Navigate to="/" />} 
+/>
             <Route path="/lop-hoc" element={<LopHoc />} />
             
-            {/* 🛡️ ROUTE BẢO MẬT: CHỈ ADMIN MỚI ĐƯỢC VÀO MÔN HỌC */}
+            {/* Các Route bảo mật dựa trên vai trò người dùng */}
             <Route 
               path="/mon-hoc" 
               element={userRole === 'admin' ? <MonHoc /> : <Navigate to="/" />} 
@@ -75,26 +77,25 @@ function App() {
             <Route path="/diem-so" element={<DiemSo />} />
             <Route path="/hanh-kiem" element={<HanhKiem />} />
             
-            {/* 🛡️ ROUTE BẢO MẬT: CHỈ ADMIN MỚI ĐƯỢC VÀO HỌC PHÍ (ĐÃ ĐỔI TỪ GIAOVU SANG ADMIN) */}
             <Route 
               path="/hoc-phi" 
               element={userRole === 'admin' ? <HocPhi /> : <Navigate to="/" />} 
             />
 
-            {/* 🛡️ ROUTE BẢO MẬT: CHỈ BAN GIÁM HIỆU */}
             <Route 
               path="/thong-ke" 
               element={userRole === 'bgh' ? <ThongKe /> : <Navigate to="/" />} 
             />
 
-            <Route path="/phan-cong" element={<PhanCong />} />
-            <Route path="/tai-khoan" element={<TaiKhoan />} />
+<Route 
+      path="/phan-cong" 
+      element={userRole === 'admin' ? <PhanCong /> : <Navigate to="/" />} 
+    />            <Route path="/tai-khoan" element={<TaiKhoan />} />
             <Route path="/xin-nghi-phep" element={<XinNghiPhep />} />
             <Route path="/diem-danh" element={<DiemDanh />} />
             <Route path="/phieu-lien-lac" element={<PhieuLienLac />} />
             <Route path="/ket-chuyen" element={<KetChuyenNamHoc />} />
             
-            {/* 🛡️ ROUTE BẢO MẬT: CHỈ ADMIN MỚI ĐƯỢC VÀO QUẢN LÝ TÀI KHOẢN */}
             <Route 
               path="/tai-khoan-he-thong" 
               element={userRole === 'admin' ? <QuanLyTaiKhoan /> : <Navigate to="/" />} 

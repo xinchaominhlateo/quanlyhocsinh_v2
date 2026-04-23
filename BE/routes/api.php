@@ -27,21 +27,22 @@ use App\Http\Controllers\Api\DashboardController;
 // 🛑 1. Tuyến đường công khai
 Route::post('/login', [AuthController::class, 'login']);
 
-// 🛑 2. Nhóm Route bắt buộc phải đăng nhập
+// 🛑 2. Nhóm Route bắt buộc phải đăng nhập (Dành cho tất cả các vai trò)
 Route::middleware('auth:sanctum')->group(function () {
     
     // Các tài nguyên chung
     Route::apiResource('hocsinh', HocSinhController::class);
     Route::apiResource('lophoc', LopHocController::class);
-    Route::apiResource('giaovien', GiaoVienController::class);
+    
+    // ✅ THÊM DÒNG NÀY: Cho phép tất cả người dùng đã đăng nhập xem danh sách giáo viên
+    // Điều này giúp trang "Phân công" hiện được danh sách giáo viên để chọn
+    Route::get('/giaovien', [GiaoVienController::class, 'index']); 
+
     Route::apiResource('diemso', DiemSoController::class);
     Route::apiResource('hanhkiem', HanhKiemController::class);
     Route::apiResource('users', UserController::class);
 
     // Nghiệp vụ
-    Route::get('/phancong', [PhanCongController::class, 'index']);
-    Route::post('/phancong', [PhanCongController::class, 'store']);
-    Route::delete('/phancong/{lop_id}/{gv_id}', [PhanCongController::class, 'destroy']);
     Route::get('/my-classes', [GiaoVienController::class, 'myClasses']);
     Route::post('/diemso/batch', [DiemSoController::class, 'storeBatch']);
     Route::post('/hanhkiem/batch', [HanhKiemController::class, 'storeBatch']);
@@ -54,10 +55,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/users/reset-password/{id}', [UserController::class, 'resetPassword']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // 🛡️ CHỈ ADMIN MỚI ĐƯỢC VÀO
+    // 🛡️ 3. CHỈ ADMIN MỚI ĐƯỢC VÀO CÁC CHỨC NĂNG QUẢN TRỊ
     Route::middleware([\App\Http\Middleware\AdminMiddleware::class])->group(function () {
         Route::apiResource('hocphi', HocPhiController::class);
         Route::apiResource('monhoc', MonHocController::class);
+        Route::apiResource('giaovien', GiaoVienController::class)->except(['index']);
+        
         Route::post('/hocsinh/ket-chuyen', [HocSinhController::class, 'ketChuyenNamHoc']);
+    Route::get('/phancong', [PhanCongController::class, 'index']);
+    Route::post('/phancong', [PhanCongController::class, 'store']);
+    Route::delete('/phancong/{lop_id}/{gv_id}', [PhanCongController::class, 'destroy']);
+
     });
 });
