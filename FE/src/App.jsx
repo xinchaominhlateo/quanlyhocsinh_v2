@@ -4,7 +4,6 @@ import axios from 'axios';
 
 // Import giao diện của m
 import Dashboard from './pages/Dashboard';
-import ThongKe from './pages/ThongKe';
 import HocSinh from './pages/Hocsinh';
 import Sidebar from './components/sidebar';
 import Login from './pages/Login';
@@ -16,7 +15,10 @@ import HocPhi from './pages/HocPhi';
 import GiaoVien from './pages/GiaoVien';
 import PhanCong from './pages/PhanCong';
 import TaiKhoan from './pages/TaiKhoan';
-
+import XinNghiPhep from './pages/XinNghiPhep';
+import DiemDanh from './pages/DiemDanh';
+import PhieuLienLac from './pages/PhieuLienLac';
+import ThongKe from './pages/ThongKe';
 function App() {
   const [isAuth, setIsAuth] = useState(false);
 
@@ -55,6 +57,9 @@ function App() {
             <Route path="/hoc-phi" element={<HocPhi />} />
             <Route path="/phan-cong" element={<PhanCong />} />
             <Route path="/tai-khoan" element={<TaiKhoan />} />
+            <Route path="/xin-nghi-phep" element={<XinNghiPhep />} />
+            <Route path="/diem-danh" element={<DiemDanh />} />
+            <Route path="/phieu-lien-lac" element={<PhieuLienLac />} />
             <Route path="/thong-ke" element={<ThongKe />} />
             {/* Nếu gõ sai đường dẫn, tự quay về dashboard */}
             <Route path="*" element={<Navigate to="/" />} />

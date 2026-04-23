@@ -43,10 +43,17 @@ Route::get('/dashboard-stats', [DashboardController::class, 'index']);
 // 🛑 4. NHÓM ROUTE BẢO MẬT BẮT BUỘC ĐĂNG NHẬP (auth:sanctum)
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/my-classes', [GiaoVienController::class, 'myClasses']);
-    
+// Báo Cáo Thống Kê
+    Route::get('/thong-ke/tong-quan', [\App\Http\Controllers\ThongKeController::class, 'getTongQuan']);
+    Route::apiResource('donnghiphep', \App\Http\Controllers\DonNghiPhepController::class);
     // Tuyến đường Logout
+    // In Phiếu Liên Lạc
+    Route::get('/phieulienlac/lop/{lop_id}', [\App\Http\Controllers\PhieuLienLacController::class, 'getHocSinhTheoLop']);
+    Route::get('/phieulienlac/chitiet/{hoc_sinh_id}', [\App\Http\Controllers\PhieuLienLacController::class, 'getChiTietPhieu']);
     Route::post('/logout', [AuthController::class, 'logout']);
-
+// Quản lý Điểm Danh
+    Route::post('/diemdanh/danhsach', [\App\Http\Controllers\DiemDanhController::class, 'layDanhSach']);
+    Route::post('/diemdanh/luu', [\App\Http\Controllers\DiemDanhController::class, 'luuDiemDanh']);
     // API Thông tin tài khoản (Profile & Đổi mật khẩu)
     Route::get('/user/profile', [UserController::class, 'profile']);
     Route::post('/user/change-password', [UserController::class, 'changePassword']);

@@ -8,7 +8,7 @@ class HanhKiem extends Model
 {
     protected $fillable = ['hoc_sinh_id', 'hoc_ki', 'loai', 'nhan_xet'];
 
-public function hocSinh() {
+public function hoc_sinh() {
     return $this->belongsTo(HocSinh::class, 'hoc_sinh_id');
 }
 }

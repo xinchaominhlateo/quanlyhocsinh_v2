@@ -1,66 +1,105 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { Users, GraduationCap, Library, BookOpen } from 'lucide-react';
 
 const ThongKe = () => {
-    const [stats, setStats] = useState(null);
-    const COLORS = ['#0088FE', '#FF8042'];
+  const [soLieu, setSoLieu] = useState({
+    tong_hoc_sinh: 0,
+    tong_giao_vien: 0,
+    tong_lop_hoc: 0,
+    tong_mon_hoc: 0
+  });
 
-    useEffect(() => {
-        axios.get('/dashboard-stats')
-            .then(res => setStats(res.data.data));
-    }, []);
+  const [dangTai, setDangTai] = useState(true);
 
-    if (!stats) return <p>Đang tải dữ liệu...</p>;
+  useEffect(() => {
+    axios.get('/thong-ke/tong-quan')
+      .then(res => {
+        setSoLieu(res.data.data);
+        setDangTai(false);
+      })
+      .catch(err => {
+        console.error("Lỗi lấy dữ liệu thống kê:", err);
+        setDangTai(false);
+      });
+  }, []);
 
-    return (
-        <div className="container-fluid p-4">
-            <h2 className="fw-bold text-primary mb-4">📊 THỐNG KÊ HỆ THỐNG</h2>
-            
-            {/* Hàng thẻ thống kê nhanh */}
-            <div className="row mb-4">
-                <div className="col-md-4">
-                    <div className="card bg-primary text-white shadow p-3">
-                        <h5>Tổng Học Sinh</h5>
-                        <h2>{stats.tong_hoc_sinh}</h2>
-                    </div>
-                </div>
-                <div className="col-md-4">
-                    <div className="card bg-success text-white shadow p-3">
-                        <h5>Học Phí Đã Thu</h5>
-                        <h2>{Number(stats.doanh_thu).toLocaleString()} đ</h2>
-                    </div>
-                </div>
-                <div className="col-md-4">
-                    <div className="card bg-info text-white shadow p-3">
-                        <h5>Tổng Lớp Học</h5>
-                        <h2>{stats.tong_lop}</h2>
-                    </div>
-                </div>
+  if (dangTai) return <div className="text-center mt-5"><div className="spinner-border text-primary"></div></div>;
+
+  return (
+    <div className="container-fluid mb-5">
+      <div className="d-flex align-items-center mb-4">
+        <h2 className="text-primary fw-bold m-0">📊 BÁO CÁO THỐNG KÊ TỔNG QUAN</h2>
+      </div>
+
+      <div className="row g-4">
+        {/* Card Học Sinh */}
+        <div className="col-12 col-md-6 col-lg-3">
+          <div className="card shadow-sm border-0 bg-primary text-white h-100 rounded-4 p-3 hover-scale">
+            <div className="card-body d-flex align-items-center justify-content-between">
+              <div>
+                <h6 className="card-title text-uppercase fw-bold opacity-75 mb-1">Tổng Học Sinh</h6>
+                <h2 className="display-5 fw-bold m-0">{soLieu.tong_hoc_sinh}</h2>
+              </div>
+              <div className="bg-white text-primary rounded-circle p-3 shadow-sm">
+                <Users size={32} />
+              </div>
             </div>
-
-            {/* Hàng biểu đồ */}
-            <div className="row">
-                <div className="col-md-6">
-                    <div className="card shadow p-3">
-                        <h5 className="text-center">Tỉ lệ Giới tính</h5>
-                        <div style={{ width: '100%', height: 300 }}>
-                            <ResponsiveContainer>
-                                <PieChart>
-                                    <Pie data={stats.ti_le_gioi_tinh} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-                                        {stats.ti_le_gioi_tinh.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-                </div>
-            </div>
+          </div>
         </div>
-    );
+
+        {/* Card Giáo Viên */}
+        <div className="col-12 col-md-6 col-lg-3">
+          <div className="card shadow-sm border-0 bg-success text-white h-100 rounded-4 p-3 hover-scale">
+            <div className="card-body d-flex align-items-center justify-content-between">
+              <div>
+                <h6 className="card-title text-uppercase fw-bold opacity-75 mb-1">Tổng Giáo Viên</h6>
+                <h2 className="display-5 fw-bold m-0">{soLieu.tong_giao_vien}</h2>
+              </div>
+              <div className="bg-white text-success rounded-circle p-3 shadow-sm">
+                <GraduationCap size={32} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Card Lớp Học */}
+        <div className="col-12 col-md-6 col-lg-3">
+          <div className="card shadow-sm border-0 bg-warning text-dark h-100 rounded-4 p-3 hover-scale">
+            <div className="card-body d-flex align-items-center justify-content-between">
+              <div>
+                <h6 className="card-title text-uppercase fw-bold opacity-75 mb-1">Tổng Số Lớp</h6>
+                <h2 className="display-5 fw-bold m-0">{soLieu.tong_lop_hoc}</h2>
+              </div>
+              <div className="bg-white text-warning rounded-circle p-3 shadow-sm">
+                <Library size={32} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Card Môn Học */}
+        <div className="col-12 col-md-6 col-lg-3">
+          <div className="card shadow-sm border-0 bg-danger text-white h-100 rounded-4 p-3 hover-scale">
+            <div className="card-body d-flex align-items-center justify-content-between">
+              <div>
+                <h6 className="card-title text-uppercase fw-bold opacity-75 mb-1">Môn Giảng Dạy</h6>
+                <h2 className="display-5 fw-bold m-0">{soLieu.tong_mon_hoc}</h2>
+              </div>
+              <div className="bg-white text-danger rounded-circle p-3 shadow-sm">
+                <BookOpen size={32} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        .hover-scale { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .hover-scale:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
+      `}</style>
+    </div>
+  );
 };
 
 export default ThongKe;

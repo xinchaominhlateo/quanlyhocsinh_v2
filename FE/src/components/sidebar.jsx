@@ -1,75 +1,97 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Users, GraduationCap, BookOpen, Library, FileSpreadsheet, HeartHandshake, CreditCard, UserCog, LogOut, Calendar, BarChart3 } from 'lucide-react';
+import { 
+  Home, Users, GraduationCap, BookOpen, Library, 
+  FileSpreadsheet, HeartHandshake, UserCog, LogOut, 
+  Calendar, Printer, BarChart3, ShieldCheck, User 
+} from 'lucide-react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 
 const Sidebar = ({ setAuth }) => {
-  // 👉 BƯỚC 1: Lấy quyền của người đang đăng nhập từ máy lên
-  const userRole = localStorage.getItem('userRole') || 'student'; // Mặc định là student cho an toàn
+  // 4 quyền chính thức: 'admin', 'bgh', 'giaovu', 'teacher'
+  // Nếu ai đó cố tình đăng nhập bằng nick student, menu sẽ trống trơn!
+  const userRole = localStorage.getItem('userRole') || 'teacher';
 
-  // 👉 BƯỚC 2: Định nghĩa danh sách toàn bộ Menu
+  // 👉 BẢNG PHÂN QUYỀN CHUẨN 100% THEO USE CASE
   const allMenuItems = [
-    { path: '/', name: 'Trang Chủ', icon: <Home size={20} />, roles: ['admin', 'teacher', 'student'] }, // Ai cũng thấy
-    { path: '/thong-ke', name: 'Thống Kê', icon: <BarChart3 size={20} />, roles: ['admin'] },
-    { path: '/hoc-sinh', name: 'Học Sinh', icon: <Users size={20} />, roles: ['admin', 'teacher'] }, // Giáo viên cũng có thể xem ds HS
-    { path: '/giao-vien', name: 'Giáo Viên', icon: <GraduationCap size={20} />, roles: ['admin'] },
-    { path: '/lop-hoc', name: 'Lớp Học', icon: <Library size={20} />, roles: ['admin'] },
-    { path: '/phan-cong', name: 'Phân Công', icon: <Calendar size={20} />, roles: ['admin'] },
-    { path: '/mon-hoc', name: 'Môn Học', icon: <BookOpen size={20} />, roles: ['admin'] },
-    { path: '/diem-so', name: 'Điểm Số', icon: <FileSpreadsheet size={20} />, roles: ['admin', 'teacher', 'student'] }, // Điểm số ai cũng có phần, nhưng bên trong file DiemSo.jsx sẽ tự chia tiếp
-{ path: '/hanh-kiem', name: 'Hạnh Kiểm', icon: <HeartHandshake size={20} />, roles: ['admin', 'teacher', 'student'] },    { path: '/hoc-phi', name: 'Học Phí', icon: <CreditCard size={20} />, roles: ['admin', 'student'] },
-    { path: '/tai-khoan', name: 'Tài Khoản', icon: <UserCog size={20} />, roles: ['admin', 'teacher', 'student'] },
+    { path: '/', name: 'Trang Chủ', icon: <Home size={20} />, roles: ['admin', 'bgh', 'giaovu', 'teacher'] }, 
+    
+    // --- 1. ADMIN ---
+    // Admin chỉ lo việc hệ thống, cấp tài khoản
+    { path: '/tai-khoan-he-thong', name: 'Quản Lý Tài Khoản', icon: <ShieldCheck size={20} />, roles: ['admin'] }, 
+
+    // --- 2. GIÁO VỤ ---
+    // Giáo vụ lo toàn bộ danh mục và sắp xếp phân công
+    { path: '/hoc-sinh', name: 'Quản Lý Học Sinh', icon: <Users size={20} />, roles: ['giaovu'] }, 
+    { path: '/giao-vien', name: 'Quản Lý Giáo Viên', icon: <GraduationCap size={20} />, roles: ['giaovu'] },
+    { path: '/lop-hoc', name: 'Quản Lý Lớp Học', icon: <Library size={20} />, roles: ['giaovu'] },
+    { path: '/mon-hoc', name: 'Quản Lý Môn Học', icon: <BookOpen size={20} />, roles: ['giaovu'] },
+    { path: '/phan-cong', name: 'Phân Công Giảng Dạy', icon: <Calendar size={20} />, roles: ['giaovu'] },
+    
+    // --- 3. BAN GIÁM HIỆU & GIÁO VỤ ---
+    // Cả 2 role này đều được phép xem thống kê
+    { path: '/thong-ke', name: 'Báo Cáo Thống Kê', icon: <BarChart3 size={20} />, roles: ['bgh', 'giaovu'] },
+
+    // --- 4. GIÁO VIÊN ---
+    { path: '/diem-so', name: 'Nhập Điểm', icon: <FileSpreadsheet size={20} />, roles: ['teacher'] }, 
+    { path: '/hanh-kiem', name: 'Đánh Giá Hạnh Kiểm', icon: <HeartHandshake size={20} />, roles: ['teacher'] }, 
+    { path: '/phieu-lien-lac', name: 'In Phiếu Liên Lạc', icon: <Printer size={20} />, roles: ['teacher'] },
+
+    // --- CHUNG (Hồ sơ cá nhân của người đăng nhập) ---
+    { path: '/tai-khoan', name: 'Hồ Sơ Cá Nhân', icon: <User size={20} />, roles: ['admin', 'bgh', 'giaovu', 'teacher'] },
   ];
 
-  // 👉 BƯỚC 3: Lọc ra những menu mà người này được phép xem
+  // Lọc menu: Mày có quyền gì thì tao cho hiện menu đó
   const menuItems = allMenuItems.filter(item => item.roles.includes(userRole));
 
   const handleLogout = () => {
     Swal.fire({
       title: 'Đăng xuất?',
-      text: "Bạn có muốn thoát hệ thống ?",
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#6366f1',
       cancelButtonColor: '#94a3b8',
       confirmButtonText: 'Thoát',
-      cancelButtonText: 'Ở lại',
-      background: '#ffffff'
+      cancelButtonText: 'Ở lại'
     }).then((result) => {
       if (result.isConfirmed) {
-        axios.post('/logout')
-          .then(() => {
-            // 👉 BƯỚC 4: Khi đăng xuất, nhớ xóa luôn quyền trong máy
-            localStorage.removeItem('token');
-            localStorage.removeItem('userRole'); 
-            window.location.href = '/';
-            setAuth(false); 
-            Swal.fire('Tạm biệt!', 'Hẹn gặp lại bạn.', 'success');
-          })
-          .catch((err) => {
-            console.error("Lỗi đăng xuất:", err);
-            localStorage.removeItem('token');
-            localStorage.removeItem('userRole'); // Xóa cho chắc chắn
-            window.location.href = '/';
-            setAuth(false);
-          });
+        axios.post('/logout').finally(() => {
+          localStorage.clear();
+          window.location.href = '/';
+          setAuth(false); 
+        });
       }
     });
   };
 
+  // Xác định màu badge cho từng Role
+  const roleColors = {
+    'admin': 'bg-danger',
+    'bgh': 'bg-warning text-dark',
+    'giaovu': 'bg-info text-dark',
+    'teacher': 'bg-success'
+  };
+
+  // Đổi tên Role hiển thị cho đẹp
+  const roleNames = {
+    'admin': 'QUẢN TRỊ VIÊN',
+    'bgh': 'BAN GIÁM HIỆU',
+    'giaovu': 'GIÁO VỤ',
+    'teacher': 'GIÁO VIÊN'
+  };
+
   return (
-    <div 
-      className="vh-100 p-3 shadow-sm" 
-      style={{ 
-        width: '250px', position: 'fixed', top: 0, left: 0, overflowY: 'auto',
-        backgroundColor: '#f8fafc', borderRight: '1px solid #e2e8f0' 
-      }}
-    >
+    <div className="vh-100 p-3 shadow-sm" style={{ width: '250px', position: 'fixed', top: 0, left: 0, overflowY: 'auto', backgroundColor: '#f8fafc', borderRight: '1px solid #e2e8f0' }}>
       <div className="d-flex align-items-center justify-content-center gap-2 mb-4 mt-2">
         <span style={{ fontSize: '1.5rem' }}>🏫</span>
         <h5 className="fw-bold m-0" style={{ color: '#1e293b', letterSpacing: '1px' }}>QUẢN LÝ CẤP 3</h5>
-        {/* 👉 THÊM TÊN QUYỀN VÀO ĐÂY ĐỂ DỄ NHÌN NHẬN BIẾT */}
-        <span className="badge bg-primary ms-1">{userRole.toUpperCase()}</span>
+      </div>
+      
+      {/* HUY HIỆU ROLE ĐẸP MẮT */}
+      <div className="text-center mb-3">
+        <span className={`badge px-3 py-2 shadow-sm ${roleColors[userRole] || 'bg-secondary'}`}>
+          {roleNames[userRole] || 'VÔ DANH'}
+        </span>
       </div>
       
       <hr style={{ color: '#cbd5e1' }} />
@@ -79,11 +101,7 @@ const Sidebar = ({ setAuth }) => {
           <li className="nav-item" key={index}>
             <NavLink
               to={item.path}
-              className={({ isActive }) =>
-                `nav-link d-flex align-items-center gap-3 rounded ${
-                  isActive ? 'fw-bold shadow-sm' : 'sidebar-hover-item'
-                }`
-              }
+              className={({ isActive }) => `nav-link d-flex align-items-center gap-3 rounded ${isActive ? 'fw-bold shadow-sm' : 'sidebar-hover-item'}`}
               style={({ isActive }) => ({
                 transition: 'all 0.2s ease-in-out',
                 color: isActive ? '#6366f1' : '#475569', 
@@ -99,13 +117,7 @@ const Sidebar = ({ setAuth }) => {
 
       <div className="mt-auto pt-4">
         <hr style={{ color: '#cbd5e1' }} className="mb-4" />
-        <button 
-          className="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2 fw-bold"
-          style={{ 
-            borderRadius: '8px', border: '1px solid #fee2e2', transition: 'all 0.3s ease' 
-          }}
-          onClick={handleLogout}
-        >
+        <button className="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2 fw-bold" onClick={handleLogout}>
           <LogOut size={18} /> Đăng Xuất
         </button>
       </div>
