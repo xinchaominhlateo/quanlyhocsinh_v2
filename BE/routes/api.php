@@ -74,4 +74,11 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::get('/user/profile', [UserController::class, 'profile']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    // NGHIỆP VỤ GIÁO VIÊN
+    Route::apiResource('diemso', DiemSoController::class);
+    Route::post('/diemso/batch', [DiemSoController::class, 'storeBatch']);
+    
+    Route::apiResource('hanhkiem', HanhKiemController::class);
+    // 👇 THÊM DÒNG NÀY VÀO 👇
+    Route::post('/hanhkiem/batch', [\App\Http\Controllers\HanhKiemController::class, 'storeBatch']);
 });

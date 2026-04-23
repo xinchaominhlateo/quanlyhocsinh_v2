@@ -19,26 +19,34 @@ const DiemSo = () => {
 
   useEffect(() => { layDuLieu(); }, []);
 
-  const layDuLieu = async () => {
-    // 1. Lấy danh sách điểm tổng (để hiện ở bảng lịch sử bên dưới)
-    const resDiem = await axios.get('/diemso');
-    setDanhSachDiem(resDiem.data.data);
+const layDuLieu = () => {
+    // 1. Lấy điểm tổng
+    axios.get('/diemso')
+      .then(res => setDanhSachDiem(res.data.data || []))
+      .catch(err => console.error("Lỗi lấy Điểm:", err));
 
-    // 2. Tải thêm dữ liệu Môn, Lớp, Học sinh nếu là Admin/Giáo viên
+    // 2. Lấy dữ liệu danh mục
     if (userRole !== 'student') {
-      const resMon = await axios.get('/monhoc');
-      setDanhSachMon(resMon.data.data);
+      
+      // Lấy danh sách Môn học
+      axios.get('/monhoc')
+        .then(res => setDanhSachMon(res.data.data || []))
+        .catch(err => console.error("Lỗi lấy Môn học:", err));
 
-      const resHS = await axios.get('/hocsinh');
-      setDanhSachHS(resHS.data.data);
+      // Lấy danh sách Học sinh
+      axios.get('/hocsinh')
+        .then(res => setDanhSachHS(res.data.data || []))
+        .catch(err => console.error("Lỗi lấy Học sinh:", err));
 
-      // Nếu là giáo viên thì gọi API lớp của tôi, nếu admin thì gọi tất cả lớp
+      // Lấy danh sách Lớp học (Phân nhánh cho Giáo viên và Giáo vụ)
       if (userRole === 'teacher') {
-        const resLop = await axios.get('/my-classes');
-        setDanhSachLop(resLop.data.data);
+        axios.get('/my-classes')
+          .then(res => setDanhSachLop(res.data.data || []))
+          .catch(err => console.error("Lỗi lấy Lớp của GV:", err));
       } else {
-        const resLop = await axios.get('/lophoc');
-        setDanhSachLop(resLop.data.data);
+        axios.get('/lophoc')
+          .then(res => setDanhSachLop(res.data.data || []))
+          .catch(err => console.error("Lỗi lấy toàn bộ Lớp:", err));
       }
     }
   };

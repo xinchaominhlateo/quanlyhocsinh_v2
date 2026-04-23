@@ -120,4 +120,31 @@ class HanhKiemController extends Controller
             'message' => 'Đã xóa đánh giá thành công!'
         ]);
     }
+    // Lưu đánh giá Hạnh Kiểm hàng loạt cho cả lớp
+    public function storeBatch(Request $request)
+    {
+        $request->validate([
+            'hanh_kiem_data' => 'required|array',
+            'hanh_kiem_data.*.hoc_sinh_id' => 'required|exists:hoc_sinhs,id',
+            'hanh_kiem_data.*.loai' => 'nullable|string|in:Tốt,Khá,Trung bình,Yếu',
+        ]);
+
+      foreach ($request->hanh_kiem_data as $hk) {
+            // Chỉ lưu nếu giáo viên có chọn loại hạnh kiểm
+            if (!empty($hk['loai'])) {
+                \App\Models\HanhKiem::updateOrCreate(
+                    [
+                        'hoc_sinh_id' => $hk['hoc_sinh_id'], 
+                        'hoc_ki' => '1' // Đưa vào Mảng 1: Tìm theo Học sinh VÀ Học kỳ 1
+                    ], 
+                    [
+                        'loai' => $hk['loai'], // Cập nhật loại
+                        'nhan_xet' => $hk['nhan_xet'] ?? '' // Cập nhật nhận xét (nếu có)
+                    ]
+                );
+            }
+        }
+
+        return response()->json(['status' => 'success', 'message' => 'Lưu đánh giá hạnh kiểm cả lớp thành công!']);
+    }
 }
