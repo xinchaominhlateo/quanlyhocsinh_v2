@@ -2,24 +2,37 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\HocSinh;
-use App\Models\User;
+use App\Models\GiaoVien;
 use App\Models\LopHoc;
-use App\Models\MonHoc;
+use App\Models\DiemSo;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ThongKeController extends Controller
 {
-    public function getTongQuan()
+    public function getDashboardStats()
     {
-        // Đếm tổng số lượng từ các bảng
-        $data = [
-            'tong_hoc_sinh' => HocSinh::count(),
-            'tong_giao_vien' => User::where('role', 'teacher')->count(),
-            'tong_lop_hoc' => LopHoc::count(),
-            'tong_mon_hoc' => MonHoc::count(),
-        ];
+        // 1. Thống kê số lượng tổng quát
+        $tongHocSinh = HocSinh::count();
+        $tongGiaoVien = GiaoVien::count();
+        $tongLopHoc = LopHoc::count();
 
-        return response()->json(['status' => 'success', 'data' => $data]);
+        // 2. Thống kê xếp loại học lực toàn trường
+        $xepLoai = DiemSo::select('xep_loai', DB::raw('count(*) as so_luong'))
+            ->groupBy('xep_loai')
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'counts' => [
+                    'hoc_sinh' => $tongHocSinh,
+                    'giao_vien' => $tongGiaoVien,
+                    'lop_hoc' => $tongLopHoc
+                ],
+                'academic_stats' => $xepLoai
+            ]
+        ]);
     }
 }

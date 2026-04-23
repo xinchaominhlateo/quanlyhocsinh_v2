@@ -1,103 +1,92 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Users, GraduationCap, Library, BookOpen } from 'lucide-react';
+import { Pie } from 'react-chartjs-2';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import { Users, School, GraduationCap } from 'lucide-react';
+
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 const ThongKe = () => {
-  const [soLieu, setSoLieu] = useState({
-    tong_hoc_sinh: 0,
-    tong_giao_vien: 0,
-    tong_lop_hoc: 0,
-    tong_mon_hoc: 0
-  });
-
-  const [dangTai, setDangTai] = useState(true);
+  const [stats, setStats] = useState(null);
 
   useEffect(() => {
-    axios.get('/thong-ke/tong-quan')
-      .then(res => {
-        setSoLieu(res.data.data);
-        setDangTai(false);
-      })
-      .catch(err => {
-        console.error("Lỗi lấy dữ liệu thống kê:", err);
-        setDangTai(false);
-      });
+    axios.get('/thongke/dashboard')
+      .then(res => setStats(res.data.data))
+      .catch(err => console.log(err));
   }, []);
 
-  if (dangTai) return <div className="text-center mt-5"><div className="spinner-border text-primary"></div></div>;
+  if (!stats) return <div className="text-center mt-5">Đang tải dữ liệu thống kê...</div>;
+
+  // Chuẩn bị dữ liệu cho biểu đồ
+  const chartData = {
+    labels: stats.academic_stats.map(item => item.xep_loai || 'Chưa xếp loại'),
+    datasets: [
+      {
+        label: 'Số lượng học sinh',
+        data: stats.academic_stats.map(item => item.so_luong),
+        backgroundColor: [
+          '#28a745', // Giỏi - Xanh lá
+          '#007bff', // Khá - Xanh dương
+          '#ffc107', // Trung bình - Vàng
+          '#dc3545', // Yếu - Đỏ
+        ],
+        borderWidth: 1,
+      },
+    ],
+  };
 
   return (
     <div className="container-fluid mb-5">
-      <div className="d-flex align-items-center mb-4">
-        <h2 className="text-primary fw-bold m-0">📊 BÁO CÁO THỐNG KÊ TỔNG QUAN</h2>
-      </div>
+      <h2 className="text-primary fw-bold mb-4">📊 THỐNG KÊ TỔNG QUAN</h2>
 
-      <div className="row g-4">
-        {/* Card Học Sinh */}
-        <div className="col-12 col-md-6 col-lg-3">
-          <div className="card shadow-sm border-0 bg-primary text-white h-100 rounded-4 p-3 hover-scale">
-            <div className="card-body d-flex align-items-center justify-content-between">
+      {/* Thẻ đếm số lượng */}
+      <div className="row g-4 mb-5">
+        <div className="col-md-4">
+          <div className="card border-0 shadow-sm bg-primary text-white p-3">
+            <div className="d-flex align-items-center">
+              <Users size={40} className="me-3" />
               <div>
-                <h6 className="card-title text-uppercase fw-bold opacity-75 mb-1">Tổng Học Sinh</h6>
-                <h2 className="display-5 fw-bold m-0">{soLieu.tong_hoc_sinh}</h2>
-              </div>
-              <div className="bg-white text-primary rounded-circle p-3 shadow-sm">
-                <Users size={32} />
+                <h5 className="mb-0">Học Sinh</h5>
+                <h2 className="fw-bold mb-0">{stats.counts.hoc_sinh}</h2>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Card Giáo Viên */}
-        <div className="col-12 col-md-6 col-lg-3">
-          <div className="card shadow-sm border-0 bg-success text-white h-100 rounded-4 p-3 hover-scale">
-            <div className="card-body d-flex align-items-center justify-content-between">
+        <div className="col-md-4">
+          <div className="card border-0 shadow-sm bg-success text-white p-3">
+            <div className="d-flex align-items-center">
+              <GraduationCap size={40} className="me-3" />
               <div>
-                <h6 className="card-title text-uppercase fw-bold opacity-75 mb-1">Tổng Giáo Viên</h6>
-                <h2 className="display-5 fw-bold m-0">{soLieu.tong_giao_vien}</h2>
-              </div>
-              <div className="bg-white text-success rounded-circle p-3 shadow-sm">
-                <GraduationCap size={32} />
+                <h5 className="mb-0">Giáo Viên</h5>
+                <h2 className="fw-bold mb-0">{stats.counts.giao_vien}</h2>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Card Lớp Học */}
-        <div className="col-12 col-md-6 col-lg-3">
-          <div className="card shadow-sm border-0 bg-warning text-dark h-100 rounded-4 p-3 hover-scale">
-            <div className="card-body d-flex align-items-center justify-content-between">
+        <div className="col-md-4">
+          <div className="card border-0 shadow-sm bg-info text-white p-3">
+            <div className="d-flex align-items-center">
+              <School size={40} className="me-3" />
               <div>
-                <h6 className="card-title text-uppercase fw-bold opacity-75 mb-1">Tổng Số Lớp</h6>
-                <h2 className="display-5 fw-bold m-0">{soLieu.tong_lop_hoc}</h2>
-              </div>
-              <div className="bg-white text-warning rounded-circle p-3 shadow-sm">
-                <Library size={32} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Card Môn Học */}
-        <div className="col-12 col-md-6 col-lg-3">
-          <div className="card shadow-sm border-0 bg-danger text-white h-100 rounded-4 p-3 hover-scale">
-            <div className="card-body d-flex align-items-center justify-content-between">
-              <div>
-                <h6 className="card-title text-uppercase fw-bold opacity-75 mb-1">Môn Giảng Dạy</h6>
-                <h2 className="display-5 fw-bold m-0">{soLieu.tong_mon_hoc}</h2>
-              </div>
-              <div className="bg-white text-danger rounded-circle p-3 shadow-sm">
-                <BookOpen size={32} />
+                <h5 className="mb-0">Lớp Học</h5>
+                <h2 className="fw-bold mb-0">{stats.counts.lop_hoc}</h2>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <style>{`
-        .hover-scale { transition: transform 0.3s ease, box-shadow 0.3s ease; }
-        .hover-scale:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
-      `}</style>
+      {/* Biểu đồ xếp loại */}
+      <div className="row">
+        <div className="col-md-6 mx-auto">
+          <div className="card shadow-sm p-4 border-0">
+            <h5 className="text-center fw-bold mb-4">Tỷ Lệ Học Lực Toàn Trường</h5>
+            <div style={{ height: '350px' }}>
+              <Pie data={chartData} options={{ maintainAspectRatio: false }} />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

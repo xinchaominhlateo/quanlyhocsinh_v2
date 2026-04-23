@@ -9,12 +9,11 @@ use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
-    // 1. Lấy thông tin tài khoản đang đăng nhập
+    // 1. Lấy thông tin tài khoản đang đăng nhập (Profile)
     public function profile(Request $request)
     {
         $user = $request->user();
         
-        // Nếu là học sinh hoặc giáo viên, mình có thể lấy thêm thông tin chi tiết từ bảng liên quan
         if ($user->role === 'student') {
             $user->load('hocSinh');
         } elseif ($user->role === 'teacher') {
@@ -54,23 +53,25 @@ class UserController extends Controller
         return response()->json(['status' => 'success', 'message' => 'Đổi mật khẩu thành công!']);
     }
 
-    // 4. Admin Reset mật khẩu cho một tài khoản bất kỳ
+    // 4. Admin Reset mật khẩu cho một tài khoản bất kỳ về 123456
     public function resetPassword(Request $request, $id)
     {
         if (Auth::user()->role !== 'admin') return response()->json(['message' => 'Cấm'], 403);
 
         $user = User::find($id);
+        if (!$user) return response()->json(['message' => 'Không tìm thấy user'], 404);
+        
         $user->update(['password' => Hash::make('123456')]);
 
         return response()->json(['status' => 'success', 'message' => 'Mật khẩu đã về mặc định: 123456']);
     }
-}
-// 5. Admin tạo tài khoản mới
+
+    // 5. Admin tạo tài khoản mới (Hàm store chuẩn nhất)
     public function store(Request $request)
     {
-        // Kiểm tra quyền
+        // Kiểm tra quyền Admin
         if (Auth::user()->role !== 'admin') {
-            return response()->json(['message' => 'Không có quyền truy cập'], 403);
+            return response()->json(['message' => 'Không có quyền thực hiện'], 403);
         }
 
         $request->validate([
@@ -83,14 +84,30 @@ class UserController extends Controller
             'password.min' => 'Mật khẩu phải có ít nhất 6 ký tự.'
         ]);
 
-        $user = User::create([
+       $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'role' => $request->role,
             'password' => Hash::make($request->password),
         ]);
 
-        return response()->json(['status' => 'success', 'message' => 'Tạo tài khoản thành công', 'data' => $user]);
+        // 2. ⚡ TỰ ĐỘNG TẠO HỒ SƠ NẾU LÀ GIÁO VIÊN
+        if ($request->role === 'teacher') {
+            // Em dùng Model GiaoVien để tạo hồ sơ rỗng
+            \App\Models\GiaoVien::create([
+                'user_id' => $user->id, // Kết nối với tài khoản vừa tạo
+                'ho_ten'  => $user->name,
+                'email'        => $user->email,
+                'ma_giao_vien'   => 'GV' . str_pad($user->id, 4, '0', STR_PAD_LEFT), // Tự tạo mã GV kiểu GV0001
+                // Các trường khác như sđt, địa chỉ để null hoặc mặc định
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'success', 
+            'message' => 'Tạo tài khoản và hồ sơ giáo viên thành công!',
+            'data' => $user
+        ]);
     }
 
     // 6. Admin xóa tài khoản
@@ -107,44 +124,10 @@ class UserController extends Controller
 
         // Chống lỗi: Không cho phép Admin tự xóa chính mình
         if ($user->id === Auth::id()) {
-            return response()->json(['message' => 'Không thể tự xóa chính mình!'], 400);
+            return response()->json(['message' => 'Bạn không thể tự xóa tài khoản của chính mình!'], 400);
         }
 
         $user->delete();
         return response()->json(['status' => 'success', 'message' => 'Đã xóa tài khoản thành công!']);
     }
-    // Admin tạo tài khoản mới
-    public function store(Request $request)
-    {
-        if (auth()->user()->role !== 'admin') return response()->json(['message' => 'Cấm'], 403);
-
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'role' => 'required|in:admin,bgh,giaovu,teacher',
-            'password' => 'required|min:6'
-        ]);
-
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'role' => $request->role,
-            'password' => Hash::make($request->password),
-        ]);
-
-        return response()->json(['status' => 'success', 'message' => 'Tạo tài khoản thành công!']);
-    }
-
-    // Admin xóa tài khoản
-    public function destroy($id)
-    {
-        if (auth()->user()->role !== 'admin') return response()->json(['message' => 'Cấm'], 403);
-        
-        $user = User::find($id);
-        if (!$user || $user->id === auth()->id()) {
-            return response()->json(['message' => 'Không thể xóa tài khoản này'], 400);
-        }
-
-        $user->delete();
-        return response()->json(['status' => 'success', 'message' => 'Đã xóa tài khoản!']);
-    }
+} // 👈 ĐÂY LÀ DẤU NGOẶC CUỐI CÙNG ĐÓNG CLASS, KHÔNG ĐƯỢC VIẾT GÌ DƯỚI ĐÂY NỮA

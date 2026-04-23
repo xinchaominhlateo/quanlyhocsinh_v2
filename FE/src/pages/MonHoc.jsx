@@ -8,7 +8,7 @@ const MonHoc = () => {
   const [idDangSua, setIdDangSua] = useState(null);
   const [tuKhoa, setTuKhoa] = useState('');
 
-  // 1. Danh sách môn học chuẩn và số tiết mặc định (Tèo có thể sửa số tiết ở đây)
+  // 1. Danh sách môn học chuẩn theo chương trình (Chỉ cần Số tiết)
   const danhMucMonChuan = [
     { ten: 'Toán học', tiet: 105 },
     { ten: 'Ngữ văn', tiet: 105 },
@@ -25,30 +25,34 @@ const MonHoc = () => {
     { ten: 'Quốc phòng và An ninh', tiet: 35 },
   ];
 
-  const [formDuLieu, setFormDuLieu] = useState({ ten_mon: '', so_tiet: '' });
+  // 🛡️ Cấu hình đơn giá 1 tiết học (Theo chuẩn HĐND Thành phố)
+  const DON_GIA_MOT_TIET = 12000; 
+
+  const [formDuLieu, setFormDuLieu] = useState({ ten_mon: '', so_tiet: '', hoc_phi: '' });
 
   useEffect(() => { layDanhSach() }, []);
 
   const layDanhSach = () => {
     axios.get('/monhoc')
-      .then(res => setDanhSachMon(res.data.data))
+      .then(res => setDanhSachMon(res.data?.data || []))
       .catch(err => console.error(err));
   };
 
-  // 2. Hàm xử lý khi chọn môn: Tự động điền số tiết
+  // 2. Tự động tính tiền = Số tiết x Đơn giá
   const handleChonDanhMuc = (e) => {
     const monTimThay = danhMucMonChuan.find(m => m.ten === e.target.value);
     if (monTimThay) {
       setFormDuLieu({
         ten_mon: monTimThay.ten,
-        so_tiet: monTimThay.tiet
+        so_tiet: monTimThay.tiet,
+        hoc_phi: monTimThay.tiet * DON_GIA_MOT_TIET // 🚀 Phép màu nằm ở đây
       });
     } else {
-      setFormDuLieu({ ten_mon: '', so_tiet: '' });
+      setFormDuLieu({ ten_mon: '', so_tiet: '', hoc_phi: '' });
     }
   };
 
-const handleLuu = (e) => {
+  const handleLuu = (e) => {
     e.preventDefault();
 
     if (!formDuLieu.ten_mon) {
@@ -63,7 +67,6 @@ const handleLuu = (e) => {
           layDanhSach(); resetForm();
         })
         .catch(error => {
-          // HIỆN LỖI THỰC TẾ TỪ SERVER
           const msg = error.response?.data?.message || 'Lỗi cập nhật hệ thống!';
           Swal.fire({ icon: 'error', title: 'Lỗi!', text: msg });
         });
@@ -74,21 +77,20 @@ const handleLuu = (e) => {
           layDanhSach(); resetForm();
         })
         .catch(error => {
-          // HIỆN LỖI THỰC TẾ TỪ SERVER
-          const msg = error.response?.data?.message || 'Lỗi thêm mới (Kiểm tra lại Backend)!';
+          const msg = error.response?.data?.message || 'Lỗi thêm mới!';
           Swal.fire({ icon: 'error', title: 'Lỗi!', text: msg });
-          console.log(error.response?.data); // Xem chi tiết ở console F12
         });
     }
   };
+
   const handleChonSua = (mon) => {
     setIdDangSua(mon.id);
-    setFormDuLieu({ ten_mon: mon.ten_mon, so_tiet: mon.so_tiet });
+    setFormDuLieu({ ten_mon: mon.ten_mon, so_tiet: mon.so_tiet, hoc_phi: mon.hoc_phi });
     setHienThiForm(true);
   };
 
   const resetForm = () => {
-    setFormDuLieu({ ten_mon: '', so_tiet: '' });
+    setFormDuLieu({ ten_mon: '', so_tiet: '', hoc_phi: '' });
     setIdDangSua(null); setHienThiForm(false);
   };
 
@@ -116,7 +118,7 @@ const handleLuu = (e) => {
         <div className={`card shadow-sm mb-4 border-${idDangSua ? 'warning' : 'success'}`}>
           <div className="card-body">
             <form onSubmit={handleLuu} className="row align-items-end">
-              <div className="col-md-5 mb-3">
+              <div className="col-md-4 mb-3">
                 <label className="fw-bold"> Chọn Môn Học</label>
                 <select 
                   className="form-select border-primary fw-bold" 
@@ -124,27 +126,39 @@ const handleLuu = (e) => {
                   onChange={handleChonDanhMuc}
                   required
                 >
-                  <option value="">-- Chọn môn từ danh mục --</option>
+                  <option value="">-- Chọn môn --</option>
                   {danhMucMonChuan.map((m, index) => (
                     <option key={index} value={m.ten}>{m.ten}</option>
                   ))}
                 </select>
               </div>
 
-              <div className="col-md-4 mb-3">
+              <div className="col-md-3 mb-3">
                 <label className="fw-bold"> Số tiết </label>
                 <input 
                   type="text" 
                   className="form-control bg-light fw-bold text-center text-danger" 
                   value={formDuLieu.so_tiet ? formDuLieu.so_tiet + ' tiết' : ''} 
                   readOnly 
-                  placeholder="Chọn môn để hiện số tiết..."
+                  placeholder="Tự động"
                 />
               </div>
 
               <div className="col-md-3 mb-3">
+                <label className="fw-bold text-success"> Học Phí ({DON_GIA_MOT_TIET}đ/tiết) </label>
+                <input 
+                  type="number" 
+                  className="form-control border-success fw-bold" 
+                  value={formDuLieu.hoc_phi} 
+                  onChange={e => setFormDuLieu({...formDuLieu, hoc_phi: e.target.value})} 
+                  placeholder="Hệ thống tự tính..."
+                  required
+                />
+              </div>
+
+              <div className="col-md-2 mb-3">
                 <button type="submit" className={`btn w-100 fw-bold btn-${idDangSua ? 'warning' : 'primary'}`}>
-                  {idDangSua ? '💾 Cập Nhật' : '🚀 Thêm Môn'}
+                  {idDangSua ? '💾 Cập Nhật' : '🚀 Thêm'}
                 </button>
               </div>
             </form>
@@ -170,6 +184,7 @@ const handleLuu = (e) => {
               <th className="text-center">Mã Môn</th>
               <th>Tên Môn Học</th>
               <th className="text-center">Số Tiết</th>
+              <th className="text-end">Học Phí</th>
               <th className="text-center">Hành Động</th>
             </tr>
           </thead>
@@ -180,6 +195,9 @@ const handleLuu = (e) => {
                 <td className="text-center fw-bold text-muted">{mon.ma_mon}</td>
                 <td className="fw-bold text-primary">{mon.ten_mon}</td>
                 <td className="text-center">{mon.so_tiet} tiết</td>
+                <td className="text-end fw-bold text-success">
+                  {mon.hoc_phi ? new Intl.NumberFormat('vi-VN').format(mon.hoc_phi) + 'đ' : '0đ'}
+                </td>
                 <td className="text-center">
                   <button className="btn btn-sm btn-outline-warning me-2 fw-bold" onClick={() => handleChonSua(mon)}>Sửa</button>
                   <button className="btn btn-sm btn-outline-danger fw-bold" onClick={() => handleXoa(mon.id)}>Xóa</button>

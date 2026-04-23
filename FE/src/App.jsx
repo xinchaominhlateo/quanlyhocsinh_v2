@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-// Import giao diện của m
+// Import các trang
 import Dashboard from './pages/Dashboard';
 import HocSinh from './pages/Hocsinh';
 import Sidebar from './components/sidebar';
@@ -20,50 +20,75 @@ import DiemDanh from './pages/DiemDanh';
 import PhieuLienLac from './pages/PhieuLienLac';
 import ThongKe from './pages/ThongKe';
 import QuanLyTaiKhoan from './pages/QuanLyTaiKhoan';
+import KetChuyenNamHoc from './pages/KetChuyenNamHoc';
+
 function App() {
-  const [isAuth, setIsAuth] = useState(false);
+  // ✅ CẢI TIẾN: Kiểm tra token ngay lập tức để tránh hiện màn hình Login khi F5
+  const [isAuth, setIsAuth] = useState(!!localStorage.getItem('token'));
 
   useEffect(() => {
-    // Giữ nguyên cấu hình Axios của m
     axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
 
     const token = localStorage.getItem('token');
     if (token) {
-      setIsAuth(true); 
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     }
-  }, []);
+  }, [isAuth]);
 
-  // 🛑 NẾU CHƯA ĐĂNG NHẬP -> CHỈ HIỆN ĐÚNG MÀN HÌNH LOGIN (Không có Sidebar)
+  // Nếu chưa đăng nhập -> Chỉ hiện Login
   if (!isAuth) {
     return <Login setAuth={setIsAuth} />;
   }
 
-  // 🛑 NẾU ĐÃ ĐĂNG NHẬP -> HIỆN NGUYÊN BẢN GIAO DIỆN CŨ CỦA M
+  const userRole = localStorage.getItem('userRole');
+
   return (
     <Router>
-      <div className="d-flex"> {/* Giữ nguyên class d-flex cũ */}
-        <Sidebar setAuth={setIsAuth} /> {/* Sidebar nằm bên trái */}
+      <div className="d-flex">
+        <Sidebar setAuth={setIsAuth} />
         
-        <div className="content p-4 w-100"> {/* Vùng nội dung bên phải y hệt cũ */}
+        <div className="content p-4 w-100" style={{ marginLeft: '250px' }}> {/* Đảm bảo không bị Sidebar đè lên */}
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/hoc-sinh" element={<HocSinh />} />
             <Route path="/giao-vien" element={<GiaoVien />} />
             <Route path="/lop-hoc" element={<LopHoc />} />
-            <Route path="/mon-hoc" element={<MonHoc />} />
+            
+            {/* 🛡️ ROUTE BẢO MẬT: CHỈ ADMIN MỚI ĐƯỢC VÀO MÔN HỌC */}
+            <Route 
+              path="/mon-hoc" 
+              element={userRole === 'admin' ? <MonHoc /> : <Navigate to="/" />} 
+            />
+
             <Route path="/diem-so" element={<DiemSo />} />
             <Route path="/hanh-kiem" element={<HanhKiem />} />
-            <Route path="/hoc-phi" element={<HocPhi />} />
+            
+            {/* 🛡️ ROUTE BẢO MẬT: CHỈ ADMIN MỚI ĐƯỢC VÀO HỌC PHÍ (ĐÃ ĐỔI TỪ GIAOVU SANG ADMIN) */}
+            <Route 
+              path="/hoc-phi" 
+              element={userRole === 'admin' ? <HocPhi /> : <Navigate to="/" />} 
+            />
+
+            {/* 🛡️ ROUTE BẢO MẬT: CHỈ BAN GIÁM HIỆU */}
+            <Route 
+              path="/thong-ke" 
+              element={userRole === 'bgh' ? <ThongKe /> : <Navigate to="/" />} 
+            />
+
             <Route path="/phan-cong" element={<PhanCong />} />
             <Route path="/tai-khoan" element={<TaiKhoan />} />
             <Route path="/xin-nghi-phep" element={<XinNghiPhep />} />
             <Route path="/diem-danh" element={<DiemDanh />} />
             <Route path="/phieu-lien-lac" element={<PhieuLienLac />} />
-            <Route path="/thong-ke" element={<ThongKe />} />
-            <Route path="/tai-khoan-he-thong" element={<QuanLyTaiKhoan />} />
-            {/* Nếu gõ sai đường dẫn, tự quay về dashboard */}
+            <Route path="/ket-chuyen" element={<KetChuyenNamHoc />} />
+            
+            {/* 🛡️ ROUTE BẢO MẬT: CHỈ ADMIN MỚI ĐƯỢC VÀO QUẢN LÝ TÀI KHOẢN */}
+            <Route 
+              path="/tai-khoan-he-thong" 
+              element={userRole === 'admin' ? <QuanLyTaiKhoan /> : <Navigate to="/" />} 
+            />
+            
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </div>

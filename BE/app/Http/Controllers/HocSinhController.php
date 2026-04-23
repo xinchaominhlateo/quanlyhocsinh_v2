@@ -133,4 +133,25 @@ class HocSinhController extends Controller
 
         return response()->json(['status' => 'success', 'message' => 'Đã xóa học sinh và tài khoản thành công!']);
     }
+    // Chức năng Kết chuyển năm học (Smart Promotion)
+    public function ketChuyenNamHoc(Request $request)
+    {
+        $request->validate([
+            'lop_cu_id' => 'required|exists:lop_hocs,id',
+            'lop_moi_id' => 'required|exists:lop_hocs,id',
+        ]);
+
+        if ($request->lop_cu_id == $request->lop_moi_id) {
+            return response()->json(['status' => 'error', 'message' => 'Lớp mới phải khác lớp cũ!'], 400);
+        }
+
+        // Tìm tất cả học sinh đang ở lớp cũ và cập nhật sang lớp mới
+        $updatedCount = \App\Models\HocSinh::where('lop_hoc_id', $request->lop_cu_id)
+            ->update(['lop_hoc_id' => $request->lop_moi_id]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => "Đã kết chuyển thành công $updatedCount học sinh lên lớp mới!"
+        ]);
+    }
 }

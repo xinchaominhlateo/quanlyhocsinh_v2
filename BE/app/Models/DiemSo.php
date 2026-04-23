@@ -15,19 +15,18 @@ class DiemSo extends Model
         'hoc_sinh_id',
         'mon_hoc_id',
         'diem_mieng',
-        'diem_15p',
-        'diem_1tiet',
-        'diem_hocky',
-        'diem_trungbinh'
+        'diem_15_phut', // Sửa lại cho chuẩn
+        'diem_1_tiet',  // Sửa lại cho chuẩn
+        'diem_thi',     // Sửa lại cho chuẩn
+        'diem_trung_binh',
+        'xep_loai'
     ];
 
-    // 👇 CHÈN THÊM ĐOẠN NÀY VÀO ĐỂ FIX LỖI 👇
     public function mon_hoc()
     {
         return $this->belongsTo(MonHoc::class, 'mon_hoc_id');
     }
 
-    // Tiện tay thì chèn luôn cái này để nó biết điểm này của học sinh nào nhé
     public function hoc_sinh()
     {
         return $this->belongsTo(HocSinh::class, 'hoc_sinh_id');
