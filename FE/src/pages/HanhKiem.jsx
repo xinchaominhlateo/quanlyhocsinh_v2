@@ -1,47 +1,59 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { Save, Search, HeartHandshake } from 'lucide-react';
 
 const HanhKiem = () => {
-  const [danhSachHanhKiem, setDanhSachHanhKiem] = useState([]);
+  const [danhSachLopCN, setDanhSachLopCN] = useState([]);
   const [danhSachHS, setDanhSachHS] = useState([]);
-  const [danhSachLop, setDanhSachLop] = useState([]);
-  
+  const [danhSachHanhKiem, setDanhSachHanhKiem] = useState([]);
   const [selectedLop, setSelectedLop] = useState('');
   const [batchData, setBatchData] = useState([]);
 
-  const userRole = localStorage.getItem('userRole') || 'student';
+  // Lấy role, mặc định là teacher nếu không có
+  const userRole = localStorage.getItem('userRole') || 'teacher';
 
   useEffect(() => { layDuLieu(); }, []);
 
-  const layDuLieu = () => {
-    // 1. Lấy lịch sử hạnh kiểm
-    axios.get('/hanhkiem').then(res => setDanhSachHanhKiem(res.data.data || [])).catch(err => console.log(err));
-
-    // 2. Lấy dữ liệu Lớp và Học sinh
-    if (userRole !== 'student') {
-      axios.get('/hocsinh').then(res => setDanhSachHS(res.data.data || [])).catch(err => console.log(err));
-
+  // ĐÃ SỬA: Dùng async/await để tải tuần tự và bắt lỗi
+  const layDuLieu = async () => {
+    try {
+      // 1. Tải Lớp
       if (userRole === 'teacher') {
-        axios.get('/my-classes').then(res => setDanhSachLop(res.data.data || [])).catch(err => console.log(err));
+        const resClasses = await axios.get('/my-classes');
+        const cacLopChuNhiem = resClasses.data.data.filter(lop => lop.pivot?.vai_tro === 'Chủ nhiệm');
+        setDanhSachLopCN(cacLopChuNhiem);
+        if (cacLopChuNhiem.length > 0) setSelectedLop(String(cacLopChuNhiem[0].id));
       } else {
-        axios.get('/lophoc').then(res => setDanhSachLop(res.data.data || [])).catch(err => console.log(err));
+        const resClasses = await axios.get('/lophoc');
+        setDanhSachLopCN(resClasses.data.data || []);
       }
+
+      // 2. Tải Học Sinh
+      const resHS = await axios.get('/hocsinh');
+      setDanhSachHS(resHS.data.data || []);
+
+      // 3. Tải Hạnh Kiểm
+      const resHK = await axios.get('/hanhkiem');
+      setDanhSachHanhKiem(resHK.data.data || []);
+
+    } catch (error) {
+      console.error("CHI TIẾT LỖI TẢI DỮ LIỆU:", error);
+      Swal.fire('Lỗi API', 'Hệ thống không tải được dữ liệu! Vui lòng ấn F12 xem tab Console.', 'error');
     }
   };
 
-  // Tự động tạo bảng xếp loại khi chọn Lớp
   useEffect(() => {
-    if (selectedLop) {
+    if (selectedLop && danhSachHS.length > 0) {
+      // Lọc học sinh theo lớp
       const studentsInClass = danhSachHS.filter(hs => String(hs.lop_hoc_id) === String(selectedLop));
       
       const initialBatch = studentsInClass.map(hs => {
-        // Kiểm tra xem đã có đánh giá cũ chưa để điền sẵn
         const existing = danhSachHanhKiem.find(hk => String(hk.hoc_sinh_id) === String(hs.id));
         return {
           hoc_sinh_id: hs.id,
           ho_ten: hs.ho_ten,
-          loai: existing?.loai || '',
+          xep_loai: existing?.xep_loai || 'Tốt', 
           nhan_xet: existing?.nhan_xet || ''
         };
       });
@@ -57,151 +69,97 @@ const HanhKiem = () => {
     setBatchData(newData);
   };
 
-  const handleLuuBatch = (e) => {
+  const handleLuuHanhKiem = (e) => {
     e.preventDefault();
-    if(batchData.length === 0) return Swal.fire('Cảnh báo', 'Lớp này chưa có học sinh!', 'warning');
-
     axios.post('/hanhkiem/batch', { hanh_kiem_data: batchData })
-      .then(() => {
-        Swal.fire('Thành công', 'Đã lưu đánh giá Hạnh Kiểm cho toàn bộ lớp!', 'success');
+      .then(res => {
+        Swal.fire('Thành công', res.data.message, 'success');
         layDuLieu();
-        setSelectedLop(''); // Reset form
       })
-      .catch((err) => {
-        Swal.fire('Lỗi', err.response?.data?.message || 'Không thể lưu!', 'error');
+      .catch(err => {
+        const errorMsg = err.response?.data?.message || 'Không thể lưu hạnh kiểm';
+        Swal.fire('Lỗi', errorMsg, 'error');
       });
-  };
-
-  const handleXoa = (id) => {
-    Swal.fire({
-      title: 'Xóa đánh giá này?',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Xóa',
-      cancelButtonText: 'Hủy'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        axios.delete(`/hanhkiem/${id}`).then(() => {
-          Swal.fire('Đã xóa', '', 'success');
-          layDuLieu();
-        });
-      }
-    });
   };
 
   return (
     <div className="container-fluid mb-5">
-      <h2 className="text-primary fw-bold mb-4">🌟 ĐÁNH GIÁ HẠNH KIỂM</h2>
-      
-      {/* KHUNG NHẬP HÀNG LOẠT */}
-      {userRole !== 'student' && (
-        <div className="card shadow-sm mb-5 border-success">
-          <div className="card-header bg-success text-white fw-bold">
-            📋 NHẬP HẠNH KIỂM THEO LỚP
-          </div>
-          <div className="card-body bg-light">
-            
-            <div className="row g-3 mb-4">
-              <div className="col-md-4">
-                <label className="form-label fw-bold">Chọn Lớp Đánh Giá</label>
-                <select className="form-select border-success" value={selectedLop} onChange={e => setSelectedLop(e.target.value)}>
-                  <option value="">-- Vui lòng chọn lớp --</option>
-                  {danhSachLop.map(lop => <option key={lop.id} value={lop.id}>{lop.ten_lop}</option>)}
-                </select>
-              </div>
+      <h2 className="text-danger fw-bold mb-4 d-flex align-items-center">
+        <HeartHandshake className="me-2" size={30} /> ĐÁNH GIÁ HẠNH KIỂM
+      </h2>
+
+      <div className="card shadow-sm mb-5 border-0 bg-light">
+        <div className="card-header bg-danger text-white fw-bold">🚀 ĐÁNH GIÁ NHANH THEO LỚP CHỦ NHIỆM</div>
+        <div className="card-body">
+          <div className="row g-3 mb-4">
+            <div className="col-md-6">
+              <label className="fw-bold text-danger">Chọn Lớp Bạn Chủ Nhiệm</label>
+              <select className="form-select border-danger" value={selectedLop} onChange={e => setSelectedLop(e.target.value)}>
+                <option value="">-- Chọn lớp --</option>
+                {danhSachLopCN.map(lop => (
+                  <option key={lop.id} value={lop.id}>🏫 {lop.ten_lop}</option>
+                ))}
+              </select>
             </div>
-
-            {!selectedLop && (
-              <div className="alert alert-warning text-center fw-bold shadow-sm rounded-3">
-                 Vui lòng chọn 🏫 Lớp để mở danh sách đánh giá hạnh kiểm!
-              </div>
-            )}
-
-            {selectedLop && (
-              <form onSubmit={handleLuuBatch}>
-                <div className="table-responsive shadow-sm rounded">
-                  <table className="table table-bordered table-hover mb-0 bg-white align-middle text-center">
-                    <thead className="table-dark">
-                      <tr>
-                        <th className="text-start" style={{width: '25%'}}>Họ Tên Học Sinh</th>
-                        <th style={{width: '25%'}}>Xếp Loại</th>
-                        <th>Nhận Xét (Không bắt buộc)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {batchData.length > 0 ? batchData.map((item, index) => (
-                        <tr key={item.hoc_sinh_id}>
-                          <td className="text-start fw-bold text-primary">{item.ho_ten}</td>
-                          <td>
-                            <select className="form-select text-center fw-bold" value={item.loai} onChange={e => handleInputChange(index, 'loai', e.target.value)}>
-                              <option value="">-- Chọn --</option>
-                              <option value="Tốt" className="text-success">Tốt</option>
-                              <option value="Khá" className="text-primary">Khá</option>
-                              <option value="Trung bình" className="text-warning">Trung bình</option>
-                              <option value="Yếu" className="text-danger">Yếu</option>
-                            </select>
-                          </td>
-                          <td>
-                            <input type="text" className="form-control" placeholder="Ghi chú thêm..."
-                                   value={item.nhan_xet} onChange={e => handleInputChange(index, 'nhan_xet', e.target.value)} />
-                          </td>
-                        </tr>
-                      )) : (
-                        <tr><td colSpan="3" className="text-danger py-3">Lớp này hiện chưa có học sinh nào!</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-                
-                {batchData.length > 0 && (
-                  <div className="mt-3 text-end">
-                    <button type="submit" className="btn btn-success fw-bold px-4 py-2 shadow">
-                      💾 LƯU HẠNH KIỂM CẢ LỚP
-                    </button>
-                  </div>
-                )}
-              </form>
-            )}
           </div>
-        </div>
-      )}
 
-      {/* BẢNG LỊCH SỬ XEM DỮ LIỆU */}
-      <h5 className="text-secondary fw-bold mb-3">LỊCH SỬ ĐÁNH GIÁ</h5>
-      <div className="card shadow-sm border-0">
-        <table className="table table-hover mb-0 text-center">
-          <thead className="table-secondary">
-            <tr>
-              <th className="text-start">Học Sinh</th>
-              <th>Loại Hạnh Kiểm</th>
-              <th>Nhận Xét</th>
-              {userRole !== 'student' && <th>Xóa</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {danhSachHanhKiem.map(hk => (
-              <tr key={hk.id} className="align-middle">
-                <td className="text-start fw-bold text-primary">{hk.hoc_sinh?.ho_ten}</td>
-                <td>
-                  <span className={`badge p-2 shadow-sm ${
-                    hk.loai === 'Tốt' ? 'bg-success' : 
-                    hk.loai === 'Khá' ? 'bg-primary' : 
-                    hk.loai === 'Trung bình' ? 'bg-warning text-dark' : 'bg-danger'
-                  }`}>
-                    {hk.loai}
-                  </span>
-                </td>
-                <td className="text-muted fst-italic">{hk.nhan_xet || '-'}</td>
-                
-                {userRole !== 'student' && (
-                  <td>
-                    <button className="btn btn-sm btn-outline-danger fw-bold" onClick={() => handleXoa(hk.id)}>🗑️</button>
-                  </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          {selectedLop ? (
+            <form onSubmit={handleLuuHanhKiem}>
+              <div className="table-responsive">
+                <table className="table table-bordered bg-white align-middle text-center">
+                  <thead className="table-dark">
+                    <tr>
+                      <th className="text-start" style={{width: '25%'}}>Học Sinh</th>
+                      <th style={{width: '25%'}}>Xếp Loại</th>
+                      <th style={{width: '50%'}}>Nhận Xét của GVCN</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {batchData.length > 0 ? batchData.map((item, index) => (
+                      <tr key={item.hoc_sinh_id}>
+                        <td className="text-start fw-bold text-primary">{item.ho_ten}</td>
+                        <td>
+                          <select 
+                            className={`form-select fw-bold text-center ${
+                              item.xep_loai === 'Tốt' ? 'text-success' : 
+                              item.xep_loai === 'Khá' ? 'text-primary' : 
+                              item.xep_loai === 'Trung bình' ? 'text-warning' : 'text-danger'
+                            }`}
+                            value={item.xep_loai} 
+                            onChange={e => handleInputChange(index, 'xep_loai', e.target.value)}
+                          >
+                            <option value="Tốt">🌟 Tốt</option>
+                            <option value="Khá">👍 Khá</option>
+                            <option value="Trung bình">😐 Trung bình</option>
+                            <option value="Yếu">⚠️ Yếu</option>
+                          </select>
+                        </td>
+                        <td>
+                          <input 
+                            type="text" 
+                            className="form-control" 
+                            placeholder="Nhập đánh giá, nhận xét..."
+                            value={item.nhan_xet} 
+                            onChange={e => handleInputChange(index, 'nhan_xet', e.target.value)} 
+                          />
+                        </td>
+                      </tr>
+                    )) : <tr><td colSpan="3" className="text-danger py-3">Lớp này chưa có học sinh nào!</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+              <div className="text-end mt-3">
+                <button type="submit" className="btn btn-danger fw-bold px-4 shadow">
+                  <Save size={18} className="me-2"/>LƯU HẠNH KIỂM
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="alert alert-warning text-center fw-bold">
+              Vui lòng chọn Lớp bạn đang làm Chủ nhiệm để tiến hành đánh giá!
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

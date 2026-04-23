@@ -10,11 +10,11 @@ class DiemSoController extends Controller
     // 1. LẤY DANH SÁCH ĐIỂM (ĐÃ FIX PHÂN QUYỀN VÀ HIỂN THỊ)
     public function index(Request $request)
     {
-        // 1. Lấy thông tin user an toàn (auth('sanctum') giúp tránh lỗi 500 nếu mất token)
+        // 1. Lấy thông tin user an toàn
         $user = auth('sanctum')->user() ?? $request->user();
 
-        // 2. Chuẩn bị câu lệnh lấy điểm
-        $query = DiemSo::with(['hoc_sinh', 'mon_hoc']); // Sửa lại đúng tên relationship có dấu gạch dưới
+        // 2. Chuẩn bị câu lệnh lấy điểm (kèm thông tin học sinh và môn học)
+        $query = DiemSo::with(['hoc_sinh', 'mon_hoc']);
 
         // 3. Phân quyền hiển thị
         if ($user) {
@@ -24,11 +24,13 @@ class DiemSoController extends Controller
                 });
             } 
             elseif ($user->role === 'teacher') {
-                $query->whereHas('mon_hoc', function ($q) use ($user) {
-                    $q->whereHas('giao_viens', function ($q2) use ($user) {
-                        $q2->where('user_id', $user->id);
-                    });
-                });
+                // SỬA LỖI Ở ĐÂY: Tìm chính xác giáo viên này
+                $giaoVien = \App\Models\GiaoVien::where('user_id', $user->id)->first();
+                
+                if ($giaoVien) {
+                    // Giáo viên dạy môn nào thì CHỈ lấy điểm của môn đó
+                    $query->where('mon_hoc_id', $giaoVien->mon_hoc_id);
+                }
             }
         }
 

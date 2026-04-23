@@ -91,10 +91,20 @@ const layDuLieu = () => {
             <div className="row g-3 mb-4">
               <div className="col-md-4">
                 <label className="fw-bold">Chọn Môn Học</label>
-                <select className="form-select border-primary" value={selectedMon} onChange={e => setSelectedMon(e.target.value)}>
-                  <option value="">-- Chọn môn --</option>
-                  {danhSachMon.map(mon => <option key={mon.id} value={mon.id}>{mon.ten_mon}</option>)}
-                </select>
+                {/* Đã sửa chỗ này: Xóa sổ xuống, đổi thành input cho giáo viên */}
+                {userRole === 'teacher' ? (
+                  <input 
+                    type="text" 
+                    className="form-control border-primary bg-light" 
+                    value={danhSachMon.length > 0 ? danhSachMon[0].ten_mon : ''} 
+                    readOnly 
+                  />
+                ) : (
+                  <select className="form-select border-primary" value={selectedMon} onChange={e => setSelectedMon(e.target.value)}>
+                    <option value="">-- Chọn môn --</option>
+                    {danhSachMon.map(mon => <option key={mon.id} value={mon.id}>{mon.ten_mon}</option>)}
+                  </select>
+                )}
               </div>
               <div className="col-md-4">
                 <label className="fw-bold">Chọn Lớp Học</label>

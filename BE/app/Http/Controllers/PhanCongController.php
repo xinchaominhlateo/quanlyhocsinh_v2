@@ -20,28 +20,34 @@ class PhanCongController extends Controller
     }
 
     // 2. Thêm một Giáo viên vào dạy một Lớp
-public function store(Request $request)
-{
-    // 1. Tìm lớp
-    $lop = LopHoc::find($request->lop_hoc_id);
-    
-    if(!$lop) {
-        return response()->json(['status' => 'error', 'message' => 'Không tìm thấy lớp!'], 404);
+// 2. Thêm một Giáo viên vào dạy một Lớp
+    public function store(Request $request)
+    {
+        // 1. Tìm lớp
+        $lop = LopHoc::find($request->lop_hoc_id);
+        
+        if(!$lop) {
+            return response()->json(['status' => 'error', 'message' => 'Không tìm thấy lớp!'], 404);
+        }
+
+        // Lấy vai trò (nếu ko truyền thì mặc định là Bộ môn)
+        $vai_tro = $request->vai_tro ?? 'Bộ môn';
+
+        // 2. Lưu giáo viên vào lớp kèm theo VAI TRÒ
+        // Truyền thêm mảng array chứa data cho bảng Pivot
+        $lop->giao_viens()->syncWithoutDetaching([
+            $request->giao_vien_id => ['vai_tro' => $vai_tro]
+        ]);
+
+        // 3. Lấy lại toàn bộ danh sách lớp đã được cập nhật
+        $dataCapNhat = LopHoc::with('giao_viens.mon_hoc')->get();
+
+        return response()->json([
+            'status' => 'success', 
+            'message' => 'Phân công thành công!',
+            'data' => $dataCapNhat 
+        ]);
     }
-
-    // 2. Lưu giáo viên vào lớp (Bảng trung gian)
-    // syncWithoutDetaching giúp thêm giáo viên mà không xóa giáo viên cũ của lớp đó
-    $lop->giao_viens()->syncWithoutDetaching([$request->giao_vien_id]);
-
-    // 3. 🛑 QUAN TRỌNG: Lấy lại toàn bộ danh sách lớp đã được cập nhật để trả về cho React
-    $dataCapNhat = LopHoc::with('giao_viens.mon_hoc')->get();
-
-    return response()->json([
-        'status' => 'success', 
-        'message' => 'Phân công thành công!',
-        'data' => $dataCapNhat // Trả luôn cục data mới về cho React
-    ]);
-}
     // 3. Hủy phân công (Xóa giáo viên khỏi lớp)
     public function destroy($lop_id, $gv_id)
     {

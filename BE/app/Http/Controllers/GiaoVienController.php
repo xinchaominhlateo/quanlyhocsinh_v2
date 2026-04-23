@@ -123,28 +123,37 @@ class GiaoVienController extends Controller
     }
 
     // 6. LẤY LỚP VÀ MÔN CHO GIÁO VIÊN ĐANG ĐĂNG NHẬP (Đã sửa)
-    public function myClasses(Request $request) 
+ public function myClasses(Request $request)
     {
-        $user = $request->user();
+        $user = auth('sanctum')->user() ?? $request->user();
         
-        // Load kèm môn học của giáo viên này
-        $gv = GiaoVien::with('mon_hoc')->where('user_id', $user->id)->first();
-        
-        if (!$gv) {
-            return response()->json([
-                'status' => 'success', 
-                'data' => [], 
-                'mon_hoc' => null
-            ]);
+        // 1. Tìm thông tin giáo viên
+        $giaoVien = \App\Models\GiaoVien::where('user_id', $user->id)
+            ->with(['mon_hoc', 'lop_hocs' => function($q) {
+                // BẮT BUỘC PHẢI CÓ DÒNG NÀY ĐỂ LẤY CỘT VAI TRÒ
+                $q->withPivot('vai_tro');
+            }])
+            ->first();
+
+        if (!$giaoVien) {
+            return response()->json(['status' => 'error', 'message' => 'Không tìm thấy giáo viên!'], 404);
         }
-        
-        // Lấy danh sách các lớp đã được phân công
-        $lops = $gv->lopHocs; 
-        
+
+        // 2. Kiểm tra xem giáo viên này có chức danh "Chủ nhiệm" ở bất kỳ lớp nào không
+        // Dùng vòng lặp kiểm tra cho chắc ăn nhất
+        $isChuNhiem = false;
+        foreach ($giaoVien->lop_hocs as $lop) {
+            if ($lop->pivot->vai_tro === 'Chủ nhiệm') {
+                $isChuNhiem = true;
+                break;
+            }
+        }
+
         return response()->json([
             'status' => 'success', 
-            'data' => $lops,
-            'mon_hoc' => $gv->mon_hoc // TRẢ VỀ MÔN HỌC RIÊNG CỦA GV NÀY
+            'data' => $giaoVien->lop_hocs, 
+            'mon_hoc' => $giaoVien->mon_hoc,
+            'is_chu_nhiem' => $isChuNhiem // <-- Cờ này sẽ kích hoạt menu bên React
         ]);
     }
 }

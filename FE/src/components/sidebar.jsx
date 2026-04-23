@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   Home, Users, GraduationCap, BookOpen, Library, 
@@ -8,9 +9,22 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 
 const Sidebar = ({ setAuth }) => {
-  // 4 quyền chính thức: 'admin', 'bgh', 'giaovu', 'teacher'
+  // --- THÊM STATE LƯU QUYỀN CHỦ NHIỆM ---
+  const [isChuNhiem, setIsChuNhiem] = useState(false);
   const userRole = localStorage.getItem('userRole') || 'teacher';
 
+  // --- THÊM EFFECT ĐỂ KIỂM TRA QUYỀN KHI LÀ GIÁO VIÊN ---
+  // --- THÊM EFFECT ĐỂ KIỂM TRA QUYỀN KHI LÀ GIÁO VIÊN ---
+// --- KẾT QUẢ ĐÃ THÀNH CÔNG: MÌNH GỠ BỎ MẤY CÁI BẢNG THÔNG BÁO TEST ĐI ---
+  useEffect(() => {
+    if (userRole === 'teacher') {
+      axios.get('/my-classes')
+        .then(res => {
+          setIsChuNhiem(res.data.is_chu_nhiem);
+        })
+        .catch(err => console.log(err));
+    }
+  }, [userRole]);
   const allMenuItems = [
     { path: '/', name: 'Trang Chủ', icon: <Home size={20} />, roles: ['admin', 'bgh', 'giaovu', 'teacher'] }, 
     
@@ -31,15 +45,22 @@ const Sidebar = ({ setAuth }) => {
 
     // --- 4. GIÁO VIÊN ---
     { path: '/diem-so', name: 'Nhập Điểm', icon: <FileSpreadsheet size={20} />, roles: ['teacher'] }, 
-    { path: '/hanh-kiem', name: 'Đánh Giá Hạnh Kiểm', icon: <HeartHandshake size={20} />, roles: ['teacher'] }, 
-    { path: '/phieu-lien-lac', name: 'In Phiếu Liên Lạc', icon: <Printer size={20} />, roles: ['teacher'] },
+    // --- SỬA: Thêm cờ requiresChuNhiem cho 2 menu dưới ---
+    { path: '/han-kiem', name: 'Đánh Giá Hạnh Kiểm', icon: <HeartHandshake size={20} />, roles: ['teacher'], requiresChuNhiem: true }, 
+    { path: '/phieu-lien-lac', name: 'In Phiếu Liên Lạc', icon: <Printer size={20} />, roles: ['teacher'], requiresChuNhiem: true },
 
     // --- CHUNG ---
     { path: '/tai-khoan', name: 'Hồ Sơ Cá Nhân', icon: <User size={20} />, roles: ['admin', 'bgh', 'giaovu', 'teacher'] },
   ];
 
-  // Giữ nguyên logic lọc menu cũ của em
-  const menuItems = allMenuItems.filter(item => item.roles.includes(userRole));
+  // --- SỬA LOGIC LỌC MENU ---
+  const menuItems = allMenuItems.filter(item => {
+    // 1. Kiểm tra role cứng
+    if (!item.roles.includes(userRole)) return false;
+    // 2. Nếu menu có cờ requiresChuNhiem mà giáo viên này không phải chủ nhiệm -> Xóa khỏi menu
+    if (item.requiresChuNhiem && !isChuNhiem) return false;
+    return true;
+  });
 
   const handleLogout = () => {
     Swal.fire({
