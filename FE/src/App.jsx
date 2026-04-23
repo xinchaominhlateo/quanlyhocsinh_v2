@@ -33,6 +33,17 @@ function App() {
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     }
+    axios.interceptors.response.use(
+      response => response,
+      error => {
+        if (error.response && error.response.status === 401) {
+          localStorage.clear(); // Xóa sạch token "ma"
+          setIsAuth(false);     // Đẩy về trang Login
+          window.location.href = '/';
+        }
+        return Promise.reject(error);
+      }
+    );
   }, [isAuth]);
 
   // Nếu chưa đăng nhập -> Chỉ hiện Login
