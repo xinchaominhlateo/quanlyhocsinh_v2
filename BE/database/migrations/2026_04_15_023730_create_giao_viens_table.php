@@ -17,8 +17,8 @@ return new class extends Migration
            $table->string('ma_giao_vien', 20)->unique(); // THÊM MÃ GIÁO VIÊN
         $table->string('ho_ten');
         $table->string('email')->unique();
-        $table->string('sdt');
-        $table->unsignedBigInteger('mon_hoc_id'); // Khóa ngoại liên kết bảng môn học
+        $table->string('sdt')->nullable();
+        $table->unsignedBigInteger('mon_hoc_id')->nullable(); 
             $table->timestamps();
             $table->foreign('mon_hoc_id')->references('id')->on('mon_hocs')->onDelete('cascade');
         });
