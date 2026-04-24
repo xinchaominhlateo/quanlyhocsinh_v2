@@ -21,7 +21,7 @@ import PhieuLienLac from './pages/PhieuLienLac';
 import ThongKe from './pages/ThongKe';
 import QuanLyTaiKhoan from './pages/QuanLyTaiKhoan';
 import KetChuyenNamHoc from './pages/KetChuyenNamHoc';
-
+import DuyetDonSuaDiem from './pages/DuyetDonSuaDiem';
 function App() {
   // Kiểm tra trạng thái đăng nhập dựa trên token trong localStorage
   const [isAuth, setIsAuth] = useState(!!localStorage.getItem('token'));
@@ -62,19 +62,18 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/hoc-sinh" element={<HocSinh />} />
-            <Route 
+        <Route 
   path="/giao-vien" 
-  element={userRole === 'admin' ? <GiaoVien /> : <Navigate to="/" />} 
+  // Cho phép cả admin và giaovu truy cập vào trang này
+  element={['admin', 'giaovu'].includes(userRole) ? <GiaoVien /> : <Navigate to="/" />} 
 />
             <Route path="/lop-hoc" element={<LopHoc />} />
             
-            {/* Các Route bảo mật dựa trên vai trò người dùng */}
-            <Route 
+<Route 
               path="/mon-hoc" 
-              element={userRole === 'admin' ? <MonHoc /> : <Navigate to="/" />} 
+              element={['admin', 'giaovu'].includes(userRole) ? <MonHoc /> : <Navigate to="/" />} 
             />
-
-            <Route path="/diem-so" element={<DiemSo />} />
+                        <Route path="/diem-so" element={<DiemSo />} />
             <Route path="/hanh-kiem" element={<HanhKiem />} />
             
             <Route 
@@ -100,8 +99,10 @@ function App() {
               path="/tai-khoan-he-thong" 
               element={userRole === 'admin' ? <QuanLyTaiKhoan /> : <Navigate to="/" />} 
             />
-            
-            <Route path="*" element={<Navigate to="/" />} />
+          <Route 
+              path="/duyet-sua-diem" 
+              element={['admin', 'giaovu', 'teacher'].includes(userRole) ? <DuyetDonSuaDiem /> : <Navigate to="/" />} 
+            />
           </Routes>
         </div>
       </div>

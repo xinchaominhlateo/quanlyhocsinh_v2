@@ -9,35 +9,23 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 
 const Sidebar = ({ setAuth }) => {
-  // --- THÊM STATE LƯU QUYỀN CHỦ NHIỆM ---
-  const [isChuNhiem, setIsChuNhiem] = useState(false);
   const userRole = localStorage.getItem('userRole') || 'teacher';
-
-  // --- THÊM EFFECT ĐỂ KIỂM TRA QUYỀN KHI LÀ GIÁO VIÊN ---
-  // --- THÊM EFFECT ĐỂ KIỂM TRA QUYỀN KHI LÀ GIÁO VIÊN ---
-// --- KẾT QUẢ ĐÃ THÀNH CÔNG: MÌNH GỠ BỎ MẤY CÁI BẢNG THÔNG BÁO TEST ĐI ---
-  useEffect(() => {
-    if (userRole === 'teacher') {
-      axios.get('/my-classes')
-        .then(res => {
-          setIsChuNhiem(res.data.is_chu_nhiem);
-        })
-        .catch(err => console.log(err));
-    }
-  }, [userRole]);
+  // Đọc thẳng giá trị chủ nhiệm từ localStorage (so sánh chuỗi vì localStorage lưu dưới dạng text)
+  const isChuNhiem = localStorage.getItem('isChuNhiem') === 'true';
+  
   const allMenuItems = [
     { path: '/', name: 'Trang Chủ', icon: <Home size={20} />, roles: ['admin', 'bgh', 'giaovu', 'teacher'] }, 
-    
+    // Trong mảng allMenuItems, thêm 1 dòng này:
+{ path: '/duyet-sua-diem', name: 'Đơn Sửa Điểm', icon: <FileSpreadsheet size={20} />, roles: ['admin', 'giaovu', 'teacher'] },
     // --- 1. ADMIN (Giữ nguyên các mục cũ và thêm 2 mục chuyển từ giáo vụ sang) ---
     { path: '/tai-khoan-he-thong', name: 'Quản Lý Tài Khoản', icon: <ShieldCheck size={20} />, roles: ['admin'] }, 
-    { path: '/mon-hoc', name: 'Quản Lý Môn Học', icon: <BookOpen size={20} />, roles: ['admin'] }, // 🔒 Chỉ Admin được vào
+    { path: '/mon-hoc', name: 'Quản Lý Môn Học', icon: <BookOpen size={20} />, roles: ['admin','giaovu'] }, // 🔒 Chỉ Admin được vào
     { path: '/hoc-phi', name: 'Quản Lý Học Phí', icon: <Banknote size={20} />, roles: ['admin'] }, // 🔒 Chỉ Admin được vào
     { path: '/ket-chuyen', name: 'Kết Chuyển Năm Học', icon: <GraduationCap size={20} />, roles: ['giaovu', 'admin'] },
 
     // --- 2. GIÁO VỤ (Đã bỏ bớt 2 mục trên) ---
     { path: '/hoc-sinh', name: 'Quản Lý Học Sinh', icon: <Users size={20} />, roles: ['giaovu'] }, 
-    { path: '/giao-vien', name: 'Quản Lý Giáo Viên', icon: <GraduationCap size={20} />, roles: ['admin'] },
-    { path: '/lop-hoc', name: 'Quản Lý Lớp Học', icon: <Library size={20} />, roles: ['giaovu'] },
+{ path: '/giao-vien', name: 'Quản Lý Giáo Viên', icon: <GraduationCap size={20} />, roles: ['admin', 'giaovu'] },    { path: '/lop-hoc', name: 'Quản Lý Lớp Học', icon: <Library size={20} />, roles: ['giaovu'] },
     { path: '/phan-cong', name: 'Phân Công Giảng Dạy', icon: <Calendar size={20} />, roles: ['admin'] },
     
     // --- 3. CHỈ BAN GIÁM HIỆU ĐƯỢC XEM ---
@@ -46,7 +34,7 @@ const Sidebar = ({ setAuth }) => {
     // --- 4. GIÁO VIÊN ---
     { path: '/diem-so', name: 'Nhập Điểm', icon: <FileSpreadsheet size={20} />, roles: ['teacher'] }, 
     // --- SỬA: Thêm cờ requiresChuNhiem cho 2 menu dưới ---
-    { path: '/han-kiem', name: 'Đánh Giá Hạnh Kiểm', icon: <HeartHandshake size={20} />, roles: ['teacher'], requiresChuNhiem: true }, 
+    { path: '/hanh-kiem', name: 'Đánh Giá Hạnh Kiểm', icon: <HeartHandshake size={20} />, roles: ['teacher'], requiresChuNhiem: true }, 
     { path: '/phieu-lien-lac', name: 'In Phiếu Liên Lạc', icon: <Printer size={20} />, roles: ['teacher'], requiresChuNhiem: true },
 
     // --- CHUNG ---
@@ -82,18 +70,20 @@ const Sidebar = ({ setAuth }) => {
     });
   };
 
+  // --- ĐÃ SỬA: Phân biệt màu sắc GVCN và GVBM ---
   const roleColors = {
     'admin': 'bg-danger',
     'bgh': 'bg-warning text-dark',
     'giaovu': 'bg-info text-dark',
-    'teacher': 'bg-success'
+    'teacher': isChuNhiem ? 'bg-primary' : 'bg-success' 
   };
 
+  // --- ĐÃ SỬA: Phân biệt Tên chức danh GVCN và GVBM ---
   const roleNames = {
     'admin': 'QUẢN TRỊ VIÊN',
     'bgh': 'BAN GIÁM HIỆU',
     'giaovu': 'GIÁO VỤ',
-    'teacher': 'GIÁO VIÊN'
+    'teacher': isChuNhiem ? 'GIÁO VIÊN CHỦ NHIỆM' : 'GIÁO VIÊN'
   };
 
   return (
@@ -104,6 +94,7 @@ const Sidebar = ({ setAuth }) => {
       </div>
       
       <div className="text-center mb-3">
+        {/* Phần hiển thị Tên và Màu sắc ở đây không cần thay đổi gì cả vì đã tự động ăn theo Object ở trên */}
         <span className={`badge px-3 py-2 shadow-sm ${roleColors[userRole] || 'bg-secondary'}`}>
           {roleNames[userRole] || 'VÔ DANH'}
         </span>

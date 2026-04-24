@@ -19,8 +19,24 @@ const Login = ({ setAuth }) => {
       // 3. Gán token vào header của axios cho các lần gọi sau
       axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
       
+      // --- PHẦN THÊM MỚI BẮT ĐẦU TỪ ĐÂY ---
+      // Nếu là giáo viên, gọi API kiểm tra chủ nhiệm trước khi vào giao diện chính
+      if (res.data.role === 'teacher') {
+        try {
+          const resClasses = await axios.get('/my-classes');
+          // Lưu kết quả true/false vào localStorage
+          localStorage.setItem('isChuNhiem', resClasses.data.is_chu_nhiem);
+        } catch (err) {
+          console.error("Lỗi lấy thông tin chủ nhiệm:", err);
+          localStorage.setItem('isChuNhiem', 'false');
+        }
+      } else {
+        localStorage.setItem('isChuNhiem', 'false');
+      }
+      // --- KẾT THÚC PHẦN THÊM MỚI ---
+
       // 4. Cập nhật trạng thái đăng nhập để chuyển vào Dashboard
-      setAuth(true);
+      setAuth(true); // Giao diện Sidebar sẽ được render ở bước này
       
       Swal.fire({
         icon: 'success',
@@ -30,15 +46,9 @@ const Login = ({ setAuth }) => {
         showConfirmButton: false
       });
     } catch (error) {
-      // --- PHẦN SỬA ĐỂ DEBUG ---
-      // In toàn bộ lỗi ra Console để bạn kiểm tra (nhấn F12 chọn Console)
       console.error("LỖI ĐĂNG NHẬP CHI TIẾT:", error.response);
-
-      // Lấy thông báo lỗi cụ thể từ Server (nếu có)
       const errorMsg = error.response?.data?.message || 'Tài khoản hoặc mật khẩu không đúng';
-      
       Swal.fire('Thất bại', errorMsg, 'error');
-      // -------------------------
     }
   };
 

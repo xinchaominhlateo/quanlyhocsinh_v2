@@ -25,10 +25,11 @@ class HanhKiemController extends Controller
             // Dùng updateOrCreate: Nếu học sinh này đã có điểm hạnh kiểm rồi thì Cập nhật, chưa có thì Tạo mới
             HanhKiem::updateOrCreate(
                 [
-                    'hoc_sinh_id' => $item['hoc_sinh_id']
+                    'hoc_sinh_id' => $item['hoc_sinh_id'],
+                    'hoc_ki' => 1
                 ],
                 [
-                    'xep_loai' => $item['xep_loai'],
+                    'loai' => $item['xep_loai'],
                     'nhan_xet' => $item['nhan_xet'] ?? null
                 ]
             );

@@ -53,7 +53,7 @@ const HanhKiem = () => {
         return {
           hoc_sinh_id: hs.id,
           ho_ten: hs.ho_ten,
-          xep_loai: existing?.xep_loai || 'Tốt', 
+          xep_loai: existing?.loai || 'Tốt', 
           nhan_xet: existing?.nhan_xet || ''
         };
       });

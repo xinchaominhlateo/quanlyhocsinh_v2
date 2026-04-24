@@ -17,6 +17,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\PhieuLienLacController;
 use App\Http\Controllers\ThongKeController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\DonXinSuaDiemController; // Khai báo ở đầu file
 
 /*
 |--------------------------------------------------------------------------
@@ -57,14 +58,22 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // 🛡️ 3. CHỈ ADMIN MỚI ĐƯỢC VÀO CÁC CHỨC NĂNG QUẢN TRỊ
     Route::middleware([\App\Http\Middleware\AdminMiddleware::class])->group(function () {
-        Route::apiResource('hocphi', HocPhiController::class);
-        Route::apiResource('monhoc', MonHocController::class);
-        Route::apiResource('giaovien', GiaoVienController::class)->except(['index']);
-        
+        Route::apiResource('hocphi', HocPhiController::class);        
         Route::post('/hocsinh/ket-chuyen', [HocSinhController::class, 'ketChuyenNamHoc']);
-    Route::get('/phancong', [PhanCongController::class, 'index']);
-    Route::post('/phancong', [PhanCongController::class, 'store']);
-    Route::delete('/phancong/{lop_id}/{gv_id}', [PhanCongController::class, 'destroy']);
+        Route::get('/phancong', [PhanCongController::class, 'index']);
+        Route::post('/phancong', [PhanCongController::class, 'store']);
+        Route::delete('/phancong/{lop_id}/{gv_id}', [PhanCongController::class, 'destroy']);
+        Route::get('/don-sua-diem', [DonXinSuaDiemController::class, 'index']);
+    Route::post('/don-sua-diem', [DonXinSuaDiemController::class, 'store']);
+    });
 
+    // 🛡️ 4. NHÓM DÀNH CHO CẢ ADMIN VÀ GIÁO VỤ
+    Route::middleware([\App\Http\Middleware\AdminMiddleware::class . ':admin,giaovu'])->group(function () {
+        // Đã chuyển route quản lý giáo viên xuống đây để Giáo vụ cũng dùng được
+        Route::apiResource('giaovien', GiaoVienController::class)->except(['index']);
+        Route::apiResource('monhoc', MonHocController::class);
+        Route::middleware([\App\Http\Middleware\AdminMiddleware::class . ':admin,giaovu'])->group(function () {
+        Route::put('/don-sua-diem/{id}/duyet', [DonXinSuaDiemController::class, 'duyetDon']);
+        Route::put('/don-sua-diem/{id}/tu-choi', [DonXinSuaDiemController::class, 'tuChoiDon']);
     });
 });

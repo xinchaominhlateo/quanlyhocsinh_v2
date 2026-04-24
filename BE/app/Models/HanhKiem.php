@@ -10,8 +10,7 @@ class HanhKiem extends Model
     use HasFactory;
 
     // Cho phép lưu các cột này
-    protected $fillable = ['hoc_sinh_id', 'xep_loai', 'nhan_xet'];
-
+protected $fillable = ['hoc_ki', 'hoc_sinh_id', 'loai', 'nhan_xet'];
     // Mối quan hệ: Hạnh kiểm thuộc về 1 Học sinh
     public function hoc_sinh()
     {

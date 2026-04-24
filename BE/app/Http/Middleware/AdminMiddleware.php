@@ -13,14 +13,19 @@ class AdminMiddleware
      *
      * @param  Closure(Request): (Response)  $next
      */
-   public function handle(Request $request, Closure $next)
-{
-    // Kiểm tra nếu User đã đăng nhập và có role là 'admin'
-    if (auth()->check() && auth()->user()->role === 'admin') {
-        return $next($request);
-    }
+public function handle(Request $request, Closure $next, ...$roles)
+    {
+        // 1. Nếu không truyền vào role nào ở api.php, mặc định chỉ cho 'admin'
+        if (empty($roles)) {
+            $roles = ['admin'];
+        }
 
-    // Nếu không phải admin, trả về lỗi 403 (Cấm truy cập)
-    return response()->json(['message' => 'Bạn không có quyền thực hiện hành động này!'], 403);
-}
+        // 2. Kiểm tra nếu role của user nằm trong danh sách được phép (in_array)
+        if (auth()->check() && in_array(auth()->user()->role, $roles)) {
+            return $next($request);
+        }
+
+        // 3. Nếu không khớp role nào, chặn lại
+        return response()->json(['message' => 'Bạn không có quyền thực hiện hành động này!'], 403);
+    }
 }
