@@ -64,7 +64,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/phancong', [PhanCongController::class, 'store']);
         Route::delete('/phancong/{lop_id}/{gv_id}', [PhanCongController::class, 'destroy']);
         Route::get('/don-sua-diem', [DonXinSuaDiemController::class, 'index']);
-    Route::post('/don-sua-diem', [DonXinSuaDiemController::class, 'store']);
+        Route::post('/don-sua-diem', [DonXinSuaDiemController::class, 'store']);
     });
 
     // 🛡️ 4. NHÓM DÀNH CHO CẢ ADMIN VÀ GIÁO VỤ
@@ -72,8 +72,10 @@ Route::middleware('auth:sanctum')->group(function () {
         // Đã chuyển route quản lý giáo viên xuống đây để Giáo vụ cũng dùng được
         Route::apiResource('giaovien', GiaoVienController::class)->except(['index']);
         Route::apiResource('monhoc', MonHocController::class);
-        Route::middleware([\App\Http\Middleware\AdminMiddleware::class . ':admin,giaovu'])->group(function () {
+        
+        // Đã gộp các route duyệt đơn vào chung nhóm này (xóa bỏ đoạn khai báo lặp middleware)
         Route::put('/don-sua-diem/{id}/duyet', [DonXinSuaDiemController::class, 'duyetDon']);
         Route::put('/don-sua-diem/{id}/tu-choi', [DonXinSuaDiemController::class, 'tuChoiDon']);
     });
-});
+
+}); // <--- ĐÂY LÀ DẤU ĐÓNG CHO NHÓM auth:sanctum ĐÃ BỊ THIẾU

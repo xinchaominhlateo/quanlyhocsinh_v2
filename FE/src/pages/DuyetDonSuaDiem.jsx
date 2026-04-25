@@ -50,7 +50,7 @@ const DuyetDonSuaDiem = () => {
                 <th>Học sinh</th>
                 <th>Môn học</th>
                 <th>Cột sửa</th>
-                <th>Điểm cũ -> Mới</th>
+              <th>Điểm cũ → Mới</th>
                 <th>Lý do</th>
                 <th>Trạng thái</th>
                 {userRole !== 'teacher' && <th>Thao tác</th>}

@@ -103,6 +103,8 @@ function App() {
               path="/duyet-sua-diem" 
               element={['admin', 'giaovu', 'teacher'].includes(userRole) ? <DuyetDonSuaDiem /> : <Navigate to="/" />} 
             />
+            {/* THÊM LẠI DÒNG NÀY ĐỂ BẮT LỖI GÕ SAI ĐƯỜNG DẪN */}
+            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </div>
       </div>
