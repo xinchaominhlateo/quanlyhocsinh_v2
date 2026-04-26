@@ -14,29 +14,41 @@ class DonXinSuaDiemController extends Controller
      * - Giáo viên: Chỉ xem các đơn do chính mình tạo.
      * - Giáo vụ / Admin: Xem toàn bộ đơn của toàn trường để duyệt.
      */
-    public function index(Request $request)
+public function index(Request $request)
     {
-        $user = $request->user();
-        
-        // Load kèm thông tin Giáo viên nộp, và thông tin bảng điểm (Học sinh, Môn học)
-        $query = DonXinSuaDiem::with(['giao_vien.user', 'diem_so.hoc_sinh', 'diem_so.mon_hoc']);
-
-        if ($user->role === 'teacher') {
-            $giaoVien = GiaoVien::where('user_id', $user->id)->first();
-            if ($giaoVien) {
-                $query->where('giao_vien_id', $giaoVien->id);
-            } else {
-                return response()->json(['status' => 'success', 'data' => []]);
+        try {
+            // Lấy thông tin user an toàn nhất
+            $user = auth('sanctum')->user() ?? $request->user();
+            
+            if (!$user) {
+                return response()->json(['message' => 'Lỗi: Không tìm thấy thông tin phiên đăng nhập.'], 401);
             }
+
+            $query = DonXinSuaDiem::with(['giao_vien.user', 'diem_so.hoc_sinh', 'diem_so.mon_hoc']);
+
+            if ($user->role === 'teacher') {
+                $giaoVien = GiaoVien::where('user_id', $user->id)->first();
+                if ($giaoVien) {
+                    $query->where('giao_vien_id', $giaoVien->id);
+                } else {
+                    return response()->json(['status' => 'success', 'data' => []]);
+                }
+            }
+
+            $data = $query->latest()->get();
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $data
+            ]);
+
+        } catch (\Exception $e) {
+            // Bắt mọi loại lỗi (Lỗi thiếu file Model, lỗi Database...) và in thẳng ra màn hình
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Lỗi ở Backend: ' . $e->getMessage() . ' (Dòng ' . $e->getLine() . ')'
+            ], 500);
         }
-
-        // Trả về danh sách mới nhất xếp lên đầu
-        $data = $query->latest()->get();
-
-        return response()->json([
-            'status' => 'success',
-            'data' => $data
-        ]);
     }
 
     /**

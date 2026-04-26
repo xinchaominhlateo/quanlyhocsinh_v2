@@ -22,6 +22,7 @@ import ThongKe from './pages/ThongKe';
 import QuanLyTaiKhoan from './pages/QuanLyTaiKhoan';
 import KetChuyenNamHoc from './pages/KetChuyenNamHoc';
 import DuyetDonSuaDiem from './pages/DuyetDonSuaDiem';
+
 function App() {
   // Kiểm tra trạng thái đăng nhập dựa trên token trong localStorage
   const [isAuth, setIsAuth] = useState(!!localStorage.getItem('token'));
@@ -61,19 +62,26 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/hoc-sinh" element={<HocSinh />} />
-        <Route 
-  path="/giao-vien" 
-  // Cho phép cả admin và giaovu truy cập vào trang này
-  element={['admin', 'giaovu'].includes(userRole) ? <GiaoVien /> : <Navigate to="/" />} 
-/>
+            
+            {/* ĐÃ SỬA: Cấp quyền cho bgh vào xem Học Sinh */}
+            <Route 
+              path="/hoc-sinh" 
+              element={['admin', 'giaovu', 'bgh'].includes(userRole) ? <HocSinh /> : <Navigate to="/" />} 
+            />
+            
+            {/* ĐÃ SỬA: Cấp quyền cho bgh vào xem Giáo Viên */}
+            <Route 
+              path="/giao-vien" 
+              element={['admin', 'giaovu', 'bgh'].includes(userRole) ? <GiaoVien /> : <Navigate to="/" />} 
+            />
+            
             <Route path="/lop-hoc" element={<LopHoc />} />
             
-<Route 
+            <Route 
               path="/mon-hoc" 
               element={['admin', 'giaovu'].includes(userRole) ? <MonHoc /> : <Navigate to="/" />} 
             />
-                        <Route path="/diem-so" element={<DiemSo />} />
+            <Route path="/diem-so" element={<DiemSo />} />
             <Route path="/hanh-kiem" element={<HanhKiem />} />
             
             <Route 
@@ -86,10 +94,11 @@ function App() {
               element={userRole === 'bgh' ? <ThongKe /> : <Navigate to="/" />} 
             />
 
-<Route 
-      path="/phan-cong" 
-      element={userRole === 'admin' ? <PhanCong /> : <Navigate to="/" />} 
-    />            <Route path="/tai-khoan" element={<TaiKhoan />} />
+            <Route 
+              path="/phan-cong" 
+              element={userRole === 'admin' ? <PhanCong /> : <Navigate to="/" />} 
+            />            
+            <Route path="/tai-khoan" element={<TaiKhoan />} />
             <Route path="/xin-nghi-phep" element={<XinNghiPhep />} />
             <Route path="/diem-danh" element={<DiemDanh />} />
             <Route path="/phieu-lien-lac" element={<PhieuLienLac />} />
@@ -99,10 +108,11 @@ function App() {
               path="/tai-khoan-he-thong" 
               element={userRole === 'admin' ? <QuanLyTaiKhoan /> : <Navigate to="/" />} 
             />
-          <Route 
+            <Route 
               path="/duyet-sua-diem" 
               element={['admin', 'giaovu', 'teacher'].includes(userRole) ? <DuyetDonSuaDiem /> : <Navigate to="/" />} 
             />
+            
             {/* THÊM LẠI DÒNG NÀY ĐỂ BẮT LỖI GÕ SAI ĐƯỜNG DẪN */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

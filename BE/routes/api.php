@@ -28,6 +28,9 @@ use App\Http\Controllers\DonXinSuaDiemController; // Khai báo ở đầu file
 // 🛑 1. Tuyến đường công khai
 Route::post('/login', [AuthController::class, 'login']);
 
+// ✅ ĐÃ DỜI RA NGOÀI: Cho phép tải file Excel mà không bị chặn bởi Sanctum
+Route::get('/hocsinh/export/{lop_id}', [HocSinhController::class, 'exportExcel']);
+
 // 🛑 2. Nhóm Route bắt buộc phải đăng nhập (Dành cho tất cả các vai trò)
 Route::middleware('auth:sanctum')->group(function () {
     
@@ -35,8 +38,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('hocsinh', HocSinhController::class);
     Route::apiResource('lophoc', LopHocController::class);
     
-    // ✅ THÊM DÒNG NÀY: Cho phép tất cả người dùng đã đăng nhập xem danh sách giáo viên
-    // Điều này giúp trang "Phân công" hiện được danh sách giáo viên để chọn
+    // Cho phép tất cả người dùng đã đăng nhập xem danh sách giáo viên
     Route::get('/giaovien', [GiaoVienController::class, 'index']); 
 
     Route::apiResource('diemso', DiemSoController::class);
@@ -55,27 +57,34 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user/profile', [UserController::class, 'profile']);
     Route::post('/users/reset-password/{id}', [UserController::class, 'resetPassword']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/don-sua-diem', [DonXinSuaDiemController::class, 'index']);
+    Route::post('/don-sua-diem', [DonXinSuaDiemController::class, 'store']);
 
     // 🛡️ 3. CHỈ ADMIN MỚI ĐƯỢC VÀO CÁC CHỨC NĂNG QUẢN TRỊ
     Route::middleware([\App\Http\Middleware\AdminMiddleware::class])->group(function () {
+        // Route gọi hàm áp học phí cho toàn lớp
+        Route::post('/hocphi/tao-theo-lop', [HocPhiController::class, 'taoHocPhiTheoLop']);
+        
         Route::apiResource('hocphi', HocPhiController::class);        
         Route::post('/hocsinh/ket-chuyen', [HocSinhController::class, 'ketChuyenNamHoc']);
         Route::get('/phancong', [PhanCongController::class, 'index']);
         Route::post('/phancong', [PhanCongController::class, 'store']);
         Route::delete('/phancong/{lop_id}/{gv_id}', [PhanCongController::class, 'destroy']);
-        Route::get('/don-sua-diem', [DonXinSuaDiemController::class, 'index']);
-        Route::post('/don-sua-diem', [DonXinSuaDiemController::class, 'store']);
     });
 
     // 🛡️ 4. NHÓM DÀNH CHO CẢ ADMIN VÀ GIÁO VỤ
     Route::middleware([\App\Http\Middleware\AdminMiddleware::class . ':admin,giaovu'])->group(function () {
-        // Đã chuyển route quản lý giáo viên xuống đây để Giáo vụ cũng dùng được
-        Route::apiResource('giaovien', GiaoVienController::class)->except(['index']);
+        // Đã sửa: Thêm 'show' vào except để nhường quyền xem chi tiết cho Nhóm 5
+        Route::apiResource('giaovien', GiaoVienController::class)->except(['index', 'show']); 
         Route::apiResource('monhoc', MonHocController::class);
-        
-        // Đã gộp các route duyệt đơn vào chung nhóm này (xóa bỏ đoạn khai báo lặp middleware)
         Route::put('/don-sua-diem/{id}/duyet', [DonXinSuaDiemController::class, 'duyetDon']);
         Route::put('/don-sua-diem/{id}/tu-choi', [DonXinSuaDiemController::class, 'tuChoiDon']);
     });
 
-}); // <--- ĐÂY LÀ DẤU ĐÓNG CHO NHÓM auth:sanctum ĐÃ BỊ THIẾU
+    // 🛡️ 5. NHÓM DÀNH CHO BAN GIÁM HIỆU, ADMIN VÀ GIÁO VỤ (Quyền XEM dữ liệu chi tiết)
+    Route::middleware([\App\Http\Middleware\AdminMiddleware::class . ':admin,giaovu,bgh'])->group(function () {
+        // Cho phép BGH xem hồ sơ chi tiết của 1 giáo viên cụ thể
+        Route::get('/giaovien/{id}', [GiaoVienController::class, 'show']);
+    });
+
+});

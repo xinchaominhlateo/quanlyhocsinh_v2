@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+// ✅ ĐÃ THÊM: Import thêm icon FileDown để làm nút Export
+import { Eye, FileDown } from 'lucide-react'; 
 
 const Hocsinh = () => {
   const [danhSachHS, setDanhSachHS] = useState([]);
@@ -8,6 +10,11 @@ const Hocsinh = () => {
   const [idDangSua, setIdDangSua] = useState(null);
   const [tuKhoa, setTuKhoa] = useState('');
   const [pagination, setPagination] = useState({ current_page: 1, last_page: 1 });
+  
+  // ✅ THÊM: State để lưu ID lớp muốn xuất Excel
+  const [lopExportId, setLopExportId] = useState('');
+
+  const userRole = localStorage.getItem('userRole');
 
   const [form, setForm] = useState({
     ho_ten: '', gioi_tinh: 'Nam', ngay_sinh: '', sdt: '', email: '', dia_chi: '', lop_hoc_id: ''
@@ -28,7 +35,29 @@ const Hocsinh = () => {
     });
   };
 
-  // --- HÀM XÓA ĐÃ QUAY TRỞ LẠI ---
+  // ✅ BƯỚC 3: HÀM XỬ LÝ XUẤT EXCEL
+  const handleExportExcel = () => {
+    if (!lopExportId) {
+      return Swal.fire('Nhắc nhở', 'Vui lòng chọn một lớp để xuất danh sách!', 'info');
+    }
+    
+    // Tìm tên lớp để thông báo cho đẹp
+    const tenLop = danhSachLop.find(l => l.id == lopExportId)?.ten_lop;
+    
+    Swal.fire({
+      title: 'Đang chuẩn bị tệp...',
+      text: `Hệ thống đang xuất danh sách lớp ${tenLop}`,
+      timer: 1500,
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading();
+        // Gọi trực tiếp URL API để trình duyệt tự tải file về
+        // Lưu ý: Đảm bảo link này khớp với route bạn đặt ở Backend
+        window.open(`${axios.defaults.baseURL}/hocsinh/export/${lopExportId}`, '_blank');
+      }
+    });
+  };
+
   const handleXoa = (id) => {
     Swal.fire({
       title: 'Bạn xác nhận xóa học sinh này ?',
@@ -56,7 +85,6 @@ const Hocsinh = () => {
     
     action.then(() => {
       Swal.fire('Thành công', 'Đã lưu học sinh!', 'success');
-      // Thêm mới thì về trang 1, sửa thì ở lại trang hiện tại
       layDuLieu(idDangSua ? pagination.current_page : 1);
       resetForm();
     }).catch(err => {
@@ -83,58 +111,104 @@ const Hocsinh = () => {
     });
   };
 
+  const xemChiTiet = (hs) => {
+      Swal.fire({
+          title: `Hồ sơ: ${hs.ho_ten}`,
+          html: `
+            <div class="text-start">
+                <p><strong>Mã HS:</strong> ${hs.ma_hoc_sinh}</p>
+                <p><strong>Ngày sinh:</strong> ${hs.ngay_sinh}</p>
+                <p><strong>SĐT:</strong> ${hs.sdt}</p>
+                <p><strong>Email:</strong> ${hs.email}</p>
+                <p><strong>Địa chỉ:</strong> ${hs.dia_chi}</p>
+            </div>
+          `,
+          icon: 'info'
+      });
+  }
+
   return (
     <div className="container-fluid mb-5">
       <h2 className="text-primary fw-bold mb-4">🎓 QUẢN LÝ HỌC SINH</h2>
       
-      {/* FORM NHẬP LIỆU */}
-      <div className={`card shadow-sm mb-4 border-${idDangSua ? 'warning' : 'primary'}`}>
-        <div className="card-header bg-primary text-white fw-bold">
-          {idDangSua ? '✏️ Đang sửa thông tin học sinh' : '➕ Thêm học sinh mới'}
+      {/* FORM NHẬP LIỆU (Ẩn nếu là BGH) */}
+      {userRole !== 'bgh' && (
+          <div className={`card shadow-sm mb-4 border-${idDangSua ? 'warning' : 'primary'}`}>
+            <div className="card-header bg-primary text-white fw-bold">
+              {idDangSua ? '✏️ Đang sửa thông tin học sinh' : '➕ Thêm học sinh mới'}
+            </div>
+            <div className="card-body">
+              <form onSubmit={handleLuu} className="row">
+                <div className="col-md-3 mb-3">
+                  <label className="fw-bold">Họ Tên</label>
+                  <input type="text" className="form-control" value={form.ho_ten} onChange={e => setForm({...form, ho_ten: e.target.value})} required />
+                </div>
+                <div className="col-md-2 mb-3">
+                  <label className="fw-bold">Giới Tính</label>
+                  <select className="form-select" value={form.gioi_tinh} onChange={e => setForm({...form, gioi_tinh: e.target.value})}>
+                    <option value="Nam">Nam</option>
+                    <option value="Nữ">Nữ</option>
+                  </select>
+                </div>
+                <div className="col-md-2 mb-3">
+                  <label className="fw-bold">Ngày Sinh</label>
+                  <input type="date" className="form-control" value={form.ngay_sinh} onChange={e => setForm({...form, ngay_sinh: e.target.value})} required />
+                </div>
+                <div className="col-md-2 mb-3">
+                  <label className="fw-bold">Lớp</label>
+                  <select className="form-select" value={form.lop_hoc_id} onChange={e => setForm({...form, lop_hoc_id: e.target.value})} required>
+                    <option value="">-- Chọn lớp --</option>
+                    {danhSachLop.map(l => <option key={l.id} value={l.id}>{l.ten_lop}</option>)}
+                  </select>
+                </div>
+                <div className="col-md-3 mb-3">
+                  <label className="fw-bold">Số Điện Thoại</label>
+                  <input type="text" className="form-control" value={form.sdt} onChange={e => setForm({...form, sdt: e.target.value})} required />
+                </div>
+                <div className="col-md-4 mb-3">
+                  <label className="fw-bold">Email (@gmail.com)</label>
+                  <input type="email" className="form-control" value={form.email} onChange={e => setForm({...form, email: e.target.value})} required />
+                </div>
+                <div className="col-md-5 mb-3">
+                  <label className="fw-bold">Địa Chỉ</label>
+                  <input type="text" className="form-control" value={form.dia_chi} onChange={e => setForm({...form, dia_chi: e.target.value})} required />
+                </div>
+                <div className="col-md-3 mb-3 d-flex align-items-end gap-2">
+                  <button type="submit" className={`btn fw-bold w-100 ${idDangSua ? 'btn-warning' : 'btn-primary'}`}>
+                    {idDangSua ? '💾 Cập Nhật' : '💾 Lưu Lại'}
+                  </button>
+                  {idDangSua && <button type="button" className="btn btn-secondary" onClick={resetForm}>Hủy</button>}
+                </div>
+              </form>
+            </div>
+          </div>
+      )}
+
+      {/* ✅ BỔ SUNG: KHU VỰC TÌM KIẾM VÀ XUẤT EXCEL */}
+      <div className="row mb-3 align-items-end">
+        <div className="col-md-4">
+            <label className="fw-bold text-muted small">Tìm kiếm nhanh</label>
+            <input 
+                type="text" 
+                className="form-control border-primary" 
+                placeholder="Nhập tên hoặc mã học sinh..." 
+                value={tuKhoa}
+                onChange={(e) => setTuKhoa(e.target.value)}
+                onKeyUp={() => layDuLieu(1)}
+            />
         </div>
-        <div className="card-body">
-          <form onSubmit={handleLuu} className="row">
-            <div className="col-md-3 mb-3">
-              <label className="fw-bold">Họ Tên</label>
-              <input type="text" className="form-control" value={form.ho_ten} onChange={e => setForm({...form, ho_ten: e.target.value})} required />
+        
+        {/* Nút Xuất Excel theo lớp */}
+        <div className="col-md-4 offset-md-4">
+            <div className="d-flex gap-2">
+                <select className="form-select border-success" value={lopExportId} onChange={e => setLopExportId(e.target.value)}>
+                    <option value="">-- Chọn lớp muốn xuất file --</option>
+                    {danhSachLop.map(l => <option key={l.id} value={l.id}>{l.ten_lop}</option>)}
+                </select>
+                <button className="btn btn-success d-flex align-items-center gap-2 fw-bold" onClick={handleExportExcel}>
+                    <FileDown size={18} /> Xuất_Excel
+                </button>
             </div>
-            <div className="col-md-2 mb-3">
-              <label className="fw-bold">Giới Tính</label>
-              <select className="form-select" value={form.gioi_tinh} onChange={e => setForm({...form, gioi_tinh: e.target.value})}>
-                <option value="Nam">Nam</option>
-                <option value="Nữ">Nữ</option>
-              </select>
-            </div>
-            <div className="col-md-2 mb-3">
-              <label className="fw-bold">Ngày Sinh</label>
-              <input type="date" className="form-control" value={form.ngay_sinh} onChange={e => setForm({...form, ngay_sinh: e.target.value})} required />
-            </div>
-            <div className="col-md-2 mb-3">
-              <label className="fw-bold">Lớp</label>
-              <select className="form-select" value={form.lop_hoc_id} onChange={e => setForm({...form, lop_hoc_id: e.target.value})} required>
-                <option value="">-- Chọn lớp --</option>
-                {danhSachLop.map(l => <option key={l.id} value={l.id}>{l.ten_lop}</option>)}
-              </select>
-            </div>
-            <div className="col-md-3 mb-3">
-              <label className="fw-bold">Số Điện Thoại</label>
-              <input type="text" className="form-control" value={form.sdt} onChange={e => setForm({...form, sdt: e.target.value})} required />
-            </div>
-            <div className="col-md-4 mb-3">
-              <label className="fw-bold">Email (@gmail.com)</label>
-              <input type="email" className="form-control" value={form.email} onChange={e => setForm({...form, email: e.target.value})} required />
-            </div>
-            <div className="col-md-5 mb-3">
-              <label className="fw-bold">Địa Chỉ</label>
-              <input type="text" className="form-control" value={form.dia_chi} onChange={e => setForm({...form, dia_chi: e.target.value})} required />
-            </div>
-            <div className="col-md-3 mb-3 d-flex align-items-end gap-2">
-              <button type="submit" className={`btn fw-bold w-100 ${idDangSua ? 'btn-warning' : 'btn-primary'}`}>
-                {idDangSua ? '💾 Cập Nhật' : '💾 Lưu Lại'}
-              </button>
-              {idDangSua && <button type="button" className="btn btn-secondary" onClick={resetForm}>Hủy</button>}
-            </div>
-          </form>
         </div>
       </div>
 
@@ -159,20 +233,27 @@ const Hocsinh = () => {
                   <td>{hs.gioi_tinh === 'Nam' ? '👦 Nam' : '👧 Nữ'}</td>
                   <td className="fw-bold text-danger">{hs.lop_hoc?.ten_lop}</td>
                   <td>
-                    {/* --- ĐÃ GẮN LẠI ĐỦ 2 NÚT CHO TÈO RỒI ĐÂY --- */}
-                    <button className="btn btn-sm btn-outline-warning me-2 fw-bold" onClick={() => handleChonSua(hs)}>Sửa</button>
-                    <button className="btn btn-sm btn-outline-danger fw-bold" onClick={() => handleXoa(hs.id)}>Xóa</button>
+                    {userRole === 'bgh' ? (
+                        <button className="btn btn-sm btn-outline-info fw-bold" onClick={() => xemChiTiet(hs)} title="Xem chi tiết">
+                            <Eye size={16} /> Xem
+                        </button>
+                    ) : (
+                        <>
+                            <button className="btn btn-sm btn-outline-warning me-2 fw-bold" onClick={() => handleChonSua(hs)}>Sửa</button>
+                            <button className="btn btn-sm btn-outline-danger fw-bold" onClick={() => handleXoa(hs.id)}>Xóa</button>
+                        </>
+                    )}
                   </td>
                 </tr>
               )) : (
-                <tr><td colSpan="5">Đang tải hoặc không có học sinh nào...</td></tr>
+                <tr><td colSpan="5">Không tìm thấy học sinh nào...</td></tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* NÚT PHÂN TRANG */}
+      {/* PHÂN TRANG */}
       <nav className="mt-4 d-flex justify-content-center">
         <ul className="pagination shadow-sm">
           <li className={`page-item ${pagination.current_page === 1 ? 'disabled' : ''}`}>

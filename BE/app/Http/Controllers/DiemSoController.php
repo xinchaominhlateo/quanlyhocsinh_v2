@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 class DiemSoController extends Controller
 {
     // 1. LẤY DANH SÁCH ĐIỂM (ĐÃ FIX PHÂN QUYỀN VÀ HIỂN THỊ)
-public function index(Request $request)
+    public function index(Request $request)
     {
         $user = auth('sanctum')->user() ?? $request->user();
         $query = DiemSo::with(['hoc_sinh', 'mon_hoc']);
@@ -24,7 +24,6 @@ public function index(Request $request)
                 
                 if ($giaoVien) {
                     // 1. Lấy danh sách ID các lớp mà giáo viên này làm "Chủ nhiệm"
-                    // Dựa vào pivot table giao_vien_lop_hoc mà bạn đã thiết kế
                     $lopChuNhiemIds = \DB::table('giao_vien_lop_hoc')
                         ->where('giao_vien_id', $giaoVien->id)
                         ->where('vai_tro', 'Chủ nhiệm')
@@ -101,6 +100,13 @@ public function index(Request $request)
     // 3. CẬP NHẬT ĐIỂM
     public function update(Request $request, $id)
     {
+        // --- SỬA THÊM: Khóa cửa sau, chặn giáo viên dùng postman/tools sửa ngầm ---
+        $user = auth('sanctum')->user() ?? $request->user();
+        if ($user && $user->role === 'teacher') {
+            return response()->json(['status' => 'error', 'message' => 'Giáo viên không được phép sửa điểm trực tiếp! Vui lòng nộp đơn.'], 403);
+        }
+        // ----------------------------------------------------------------------
+
         $diem = DiemSo::find($id);
         if ($diem) {
             $dataDaTinh = $this->tinhToanTuDong($request);
@@ -125,7 +131,24 @@ public function index(Request $request)
             'diem_data' => 'required|array',
         ]);
 
+        // Lấy thông tin user hiện tại
+        $user = auth('sanctum')->user() ?? $request->user();
+
         foreach ($request->diem_data as $item) {
+            
+            // --- SỬA THÊM: Kiểm tra nếu là giáo viên và điểm ĐÃ TỒN TẠI thì BỎ QUA ---
+            if ($user && $user->role === 'teacher') {
+                $daCoDiem = \App\Models\DiemSo::where('hoc_sinh_id', $item['hoc_sinh_id'])
+                                              ->where('mon_hoc_id', $request->mon_hoc_id)
+                                              ->exists();
+                if ($daCoDiem) {
+                    // Nếu dòng điểm này đã có trong DB, skip vòng lặp (không update)
+                    // Giáo viên bắt buộc phải nộp đơn xin sửa điểm
+                    continue; 
+                }
+            }
+            // -----------------------------------------------------------------------
+
             // Chuyển dữ liệu về kiểu số để tính toán
             $m = (float)($item['diem_mieng'] ?? 0);
             $p = (float)($item['diem_15_phut'] ?? 0);
@@ -158,7 +181,6 @@ public function index(Request $request)
             );
         }
 
-        return response()->json(['status' => 'success', 'message' => 'Đã lưu điểm và cập nhật bảng tổng hợp!']);
+        return response()->json(['status' => 'success', 'message' => 'Đã lưu điểm thành công! Các ô bị khóa sẽ không thay đổi.']);
     }
-
-} // <--- Chỉ có đúng 1 dấu ngoặc nhọn kết thúc file ở đây thôi nhé!
+}

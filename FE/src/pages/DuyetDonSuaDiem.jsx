@@ -9,15 +9,20 @@ const DuyetDonSuaDiem = () => {
 
   useEffect(() => { layDanhSachDon(); }, []);
 
-  const layDanhSachDon = async () => {
+ const layDanhSachDon = async () => {
     try {
       const res = await axios.get('/don-sua-diem');
-      setDanhSachDon(res.data.data);
+      if (res.data.status === 'success') {
+        setDanhSachDon(res.data.data);
+      } else {
+        // Nếu backend trả về status error (do catch được)
+        Swal.fire('Lỗi Backend', res.data.message, 'error');
+      }
     } catch (error) {
-      console.error(error);
+      // Ép lỗi phải chình ình lên màn hình thay vì trốn trong console
+      Swal.fire('Lỗi Load Đơn', error.response?.data?.message || error.message, 'error');
     }
   };
-
   const handleDuyet = async (id) => {
     try {
       const res = await axios.put(`/don-sua-diem/${id}/duyet`);

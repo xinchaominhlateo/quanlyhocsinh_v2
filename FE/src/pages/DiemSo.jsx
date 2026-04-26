@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import { Save, Search, Table } from 'lucide-react';
+// --- SỬA: Thêm Edit3 vào đây ---
+import { Save, Search, Table, Edit3 } from 'lucide-react'; 
 
 const DiemSo = () => {
   const [danhSachDiem, setDanhSachDiem] = useState([]);
@@ -13,34 +14,40 @@ const DiemSo = () => {
   const [selectedLop, setSelectedLop] = useState('');
   const [batchData, setBatchData] = useState([]);
 
+  // --- THÊM: State quản lý Modal Đơn xin sửa điểm ---
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [requestData, setRequestData] = useState({
+    diem_so_id: '',
+    hoc_sinh_name: '',
+    cot_diem_sai: '',
+    diem_moi: '',
+    ly_do: ''
+  });
+
   const userRole = localStorage.getItem('userRole') || 'student';
 
   useEffect(() => { layDuLieu(); }, []);
 
- // FE/src/pages/DiemSo.jsx
+  const layDuLieu = () => {
+    axios.get('/diemso').then(res => setDanhSachDiem(res.data.data || [])).catch(err => console.log(err));
 
-const layDuLieu = () => {
-  axios.get('/diemso').then(res => setDanhSachDiem(res.data.data || [])).catch(err => console.log(err));
-
-  if (userRole !== 'student') {
-    axios.get('/hocsinh').then(res => setDanhSachHS(res.data.data || [])).catch(err => console.log(err));
-    
-    if (userRole === 'teacher') {
-      // Gọi API my-classes để lấy cả Lớp và Môn của GV
-      axios.get('/my-classes').then(res => {
-        setDanhSachLop(res.data.data || []);
-        if (res.data.mon_hoc) {
-          setDanhSachMon([res.data.mon_hoc]); // Chỉ hiện duy nhất môn của GV đó
-          setSelectedMon(res.data.mon_hoc.id); // Tự động chọn luôn môn đó
-        }
-      }).catch(err => console.log(err));
-    } else {
-      // Admin hoặc vai trò khác thì lấy full
-      axios.get('/monhoc').then(res => setDanhSachMon(res.data.data || [])).catch(err => console.log(err));
-      axios.get('/lophoc').then(res => setDanhSachLop(res.data.data || [])).catch(err => console.log(err));
+    if (userRole !== 'student') {
+      axios.get('/hocsinh').then(res => setDanhSachHS(res.data.data || [])).catch(err => console.log(err));
+      
+      if (userRole === 'teacher') {
+        axios.get('/my-classes').then(res => {
+          setDanhSachLop(res.data.data || []);
+          if (res.data.mon_hoc) {
+            setDanhSachMon([res.data.mon_hoc]); 
+            setSelectedMon(res.data.mon_hoc.id); 
+          }
+        }).catch(err => console.log(err));
+      } else {
+        axios.get('/monhoc').then(res => setDanhSachMon(res.data.data || [])).catch(err => console.log(err));
+        axios.get('/lophoc').then(res => setDanhSachLop(res.data.data || [])).catch(err => console.log(err));
+      }
     }
-  }
-};
+  };
 
   useEffect(() => {
     if (selectedLop && selectedMon) {
@@ -50,6 +57,7 @@ const layDuLieu = () => {
         return {
           hoc_sinh_id: hs.id,
           ho_ten: hs.ho_ten,
+          diem_id: existing?.id || null, // --- THÊM: Cần ID điểm để biết điểm này đã lưu chưa và để gửi đơn
           diem_mieng: existing?.diem_mieng ?? '',
           diem_15_phut: existing?.diem_15_phut ?? '',
           diem_1_tiet: existing?.diem_1_tiet ?? '',
@@ -78,10 +86,33 @@ const layDuLieu = () => {
       .catch(err => Swal.fire('Lỗi', err.response?.data?.message || 'Không thể lưu điểm', 'error'));
   };
 
+  // --- THÊM: Các hàm xử lý Nộp đơn sửa điểm ---
+  const openRequestModal = (item, column) => {
+    setRequestData({
+      diem_so_id: item.diem_id,
+      hoc_sinh_name: item.ho_ten,
+      cot_diem_sai: column,
+      diem_moi: '',
+      ly_do: ''
+    });
+    setShowRequestModal(true);
+  };
+
+  const submitRequest = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post('/don-sua-diem', requestData);
+      Swal.fire('Thành công', 'Đã gửi đơn xin sửa điểm lên Giáo vụ/BGH duyệt!', 'success');
+      setShowRequestModal(false);
+    } catch (error) {
+      Swal.fire('Lỗi', error.response?.data?.message || 'Không thể gửi đơn. Vui lòng thử lại.', 'error');
+    }
+  };
+
   const formatDiem = (val) => (val !== null && val !== undefined && val !== '') ? val : '-';
 
   return (
-    <div className="container-fluid mb-5">
+    <div className="container-fluid mb-5 position-relative">
       <h2 className="text-primary fw-bold mb-4">📚 QUẢN LÝ ĐIỂM SỐ</h2>
 
       {userRole !== 'student' && (
@@ -91,7 +122,6 @@ const layDuLieu = () => {
             <div className="row g-3 mb-4">
               <div className="col-md-4">
                 <label className="fw-bold">Chọn Môn Học</label>
-                {/* Đã sửa chỗ này: Xóa sổ xuống, đổi thành input cho giáo viên */}
                 {userRole === 'teacher' ? (
                   <input 
                     type="text" 
@@ -122,20 +152,51 @@ const layDuLieu = () => {
                     <thead className="table-dark">
                       <tr>
                         <th className="text-start">Học Sinh</th>
-                        <th style={{width:'15%'}}>Miệng</th>
-                        <th style={{width:'15%'}}>15 Phút</th>
-                        <th style={{width:'15%'}}>1 Tiết (x2)</th>
-                        <th style={{width:'15%'}}>Thi HK (x3)</th>
+                        <th style={{width:'20%'}}>Miệng</th>
+                        <th style={{width:'20%'}}>15 Phút</th>
+                        <th style={{width:'20%'}}>1 Tiết (x2)</th>
+                        <th style={{width:'20%'}}>Thi HK (x3)</th>
                       </tr>
                     </thead>
                     <tbody>
                       {batchData.length > 0 ? batchData.map((item, index) => (
                         <tr key={item.hoc_sinh_id}>
                           <td className="text-start fw-bold text-primary">{item.ho_ten}</td>
-                          <td><input type="number" step="0.1" className="form-control text-center" value={item.diem_mieng} onChange={e => handleInputChange(index, 'diem_mieng', e.target.value)} /></td>
-                          <td><input type="number" step="0.1" className="form-control text-center" value={item.diem_15_phut} onChange={e => handleInputChange(index, 'diem_15_phut', e.target.value)} /></td>
-                          <td><input type="number" step="0.1" className="form-control text-center" value={item.diem_1_tiet} onChange={e => handleInputChange(index, 'diem_1_tiet', e.target.value)} /></td>
-                          <td><input type="number" step="0.1" className="form-control text-center" value={item.diem_thi} onChange={e => handleInputChange(index, 'diem_thi', e.target.value)} /></td>
+                          
+                          {/* --- SỬA: Đóng gói Input và Button xin sửa vào chung 1 ô --- */}
+                          <td>
+                            <div className="d-flex align-items-center justify-content-center gap-1">
+                              <input type="number" step="0.1" className="form-control text-center" value={item.diem_mieng} onChange={e => handleInputChange(index, 'diem_mieng', e.target.value)} disabled={userRole === 'teacher' && item.diem_id} />
+                              {userRole === 'teacher' && item.diem_id && (
+                                <button type="button" className="btn btn-sm btn-outline-warning px-2" onClick={() => openRequestModal(item, 'diem_mieng')} title="Xin sửa điểm"><Edit3 size={14}/></button>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <div className="d-flex align-items-center justify-content-center gap-1">
+                              <input type="number" step="0.1" className="form-control text-center" value={item.diem_15_phut} onChange={e => handleInputChange(index, 'diem_15_phut', e.target.value)} disabled={userRole === 'teacher' && item.diem_id} />
+                              {userRole === 'teacher' && item.diem_id && (
+                                <button type="button" className="btn btn-sm btn-outline-warning px-2" onClick={() => openRequestModal(item, 'diem_15_phut')} title="Xin sửa điểm"><Edit3 size={14}/></button>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <div className="d-flex align-items-center justify-content-center gap-1">
+                              <input type="number" step="0.1" className="form-control text-center" value={item.diem_1_tiet} onChange={e => handleInputChange(index, 'diem_1_tiet', e.target.value)} disabled={userRole === 'teacher' && item.diem_id} />
+                              {userRole === 'teacher' && item.diem_id && (
+                                <button type="button" className="btn btn-sm btn-outline-warning px-2" onClick={() => openRequestModal(item, 'diem_1_tiet')} title="Xin sửa điểm"><Edit3 size={14}/></button>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <div className="d-flex align-items-center justify-content-center gap-1">
+                              <input type="number" step="0.1" className="form-control text-center" value={item.diem_thi} onChange={e => handleInputChange(index, 'diem_thi', e.target.value)} disabled={userRole === 'teacher' && item.diem_id} />
+                              {userRole === 'teacher' && item.diem_id && (
+                                <button type="button" className="btn btn-sm btn-outline-warning px-2" onClick={() => openRequestModal(item, 'diem_thi')} title="Xin sửa điểm"><Edit3 size={14}/></button>
+                              )}
+                            </div>
+                          </td>
+
                         </tr>
                       )) : <tr><td colSpan="5" className="text-danger py-3">Lớp này chưa có học sinh nào!</td></tr>}
                     </tbody>
@@ -181,6 +242,58 @@ const layDuLieu = () => {
           </table>
         </div>
       </div>
+
+      {/* --- THÊM: Giao diện Cửa sổ Modal điền đơn xin sửa điểm --- */}
+      {showRequestModal && (
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }} tabIndex="-1">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content border-0 shadow-lg">
+              <div className="modal-header bg-warning text-dark">
+                <h5 className="modal-title fw-bold">📝 Đơn Xin Sửa Điểm</h5>
+                <button type="button" className="btn-close" onClick={() => setShowRequestModal(false)}></button>
+              </div>
+              <form onSubmit={submitRequest}>
+                <div className="modal-body">
+                  <div className="alert alert-info py-2">
+                    Học sinh: <strong>{requestData.hoc_sinh_name}</strong><br/>
+                    Cột điểm: <strong>{
+                      requestData.cot_diem_sai === 'diem_mieng' ? 'Điểm Miệng' :
+                      requestData.cot_diem_sai === 'diem_15_phut' ? 'Điểm 15 Phút' :
+                      requestData.cot_diem_sai === 'diem_1_tiet' ? 'Điểm 1 Tiết' : 'Điểm Thi HK'
+                    }</strong>
+                  </div>
+                  
+                  <div className="mb-3">
+                    <label className="form-label fw-bold">Điểm mới đề xuất</label>
+                    <input 
+                      type="number" step="0.1" min="0" max="10" 
+                      className="form-control border-primary" 
+                      required 
+                      value={requestData.diem_moi} 
+                      onChange={e => setRequestData({...requestData, diem_moi: e.target.value})} 
+                      placeholder="Nhập điểm cần sửa thành (0 - 10)"
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label fw-bold">Lý do sửa điểm</label>
+                    <textarea 
+                      className="form-control border-primary" rows="3" 
+                      required 
+                      value={requestData.ly_do} 
+                      onChange={e => setRequestData({...requestData, ly_do: e.target.value})} 
+                      placeholder="VD: Do chấm sót ý của học sinh, nhập nhầm dòng..."
+                    ></textarea>
+                  </div>
+                </div>
+                <div className="modal-footer bg-light">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowRequestModal(false)}>Hủy bỏ</button>
+                  <button type="submit" className="btn btn-success fw-bold">Gửi Ban Giám Hiệu</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

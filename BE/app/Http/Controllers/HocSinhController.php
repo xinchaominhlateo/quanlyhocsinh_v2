@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\HocSinh; 
 use App\Models\User;
+use App\Models\LopHoc; // ✅ Đã thêm Model lớp học
 use Illuminate\Support\Facades\Hash;
 
 class HocSinhController extends Controller
@@ -97,7 +98,7 @@ class HocSinhController extends Controller
         $dataCapNhat = $request->except(['ma_hoc_sinh']);
         $hocSinh->update($dataCapNhat);
 
-        // 👉 THÊM MỚI LÚC CẬP NHẬT: Đồng bộ qua bảng users
+        // 👉 ĐỒNG BỘ QUA BẢNG USERS
         if ($hocSinh->user_id) {
             User::where('id', $hocSinh->user_id)->update([
                 'name' => $request->ho_ten,
@@ -120,20 +121,65 @@ class HocSinhController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Không tìm thấy!'], 404);
         }
 
-        // Lấy ID tài khoản trước khi xóa học sinh
         $userId = $hocSinh->user_id;
-
-        // Xóa thông tin học sinh
         $hocSinh->delete();
 
-        // 👉 THÊM MỚI LÚC XÓA: Xóa tài khoản đăng nhập để tránh rác database
         if ($userId) {
             User::where('id', $userId)->delete();
         }
 
         return response()->json(['status' => 'success', 'message' => 'Đã xóa học sinh và tài khoản thành công!']);
     }
-    // Chức năng Kết chuyển năm học (Smart Promotion)
+
+    // 5. CHỨC NĂNG XUẤT FILE EXCEL (CSV) THEO LỚP ✅ MỚI THÊM
+    public function exportExcel($lop_id)
+    {
+        $lop = LopHoc::findOrFail($lop_id);
+        $hocSinhs = HocSinh::where('lop_hoc_id', $lop_id)->get();
+
+        $fileName = 'Danh_sach_lop_' . $lop->ten_lop . '.csv';
+
+        $headers = [
+            "Content-type"        => "text/csv; charset=utf-8",
+            "Content-Disposition" => "attachment; filename=$fileName",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $callback = function() use($hocSinhs, $lop) {
+            $file = fopen('php://output', 'w');
+            
+            // Xuất BOM để Excel hiểu là UTF-8 (Hiện đúng tiếng Việt)
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            // Dòng tiêu đề file
+            fputcsv($file, ['DANH SÁCH HỌC SINH LỚP: ' . $lop->ten_lop]);
+            fputcsv($file, []); // Dòng trống
+
+            // Tiêu đề các cột
+            fputcsv($file, ['STT', 'Mã Học Sinh', 'Họ Và Tên', 'Giới Tính', 'Ngày Sinh', 'Số Điện Thoại', 'Email', 'Địa Chỉ']);
+
+            // Đổ dữ liệu
+            foreach ($hocSinhs as $key => $hs) {
+                fputcsv($file, [
+                    $key + 1,
+                    $hs->ma_hoc_sinh,
+                    $hs->ho_ten,
+                    $hs->gioi_tinh,
+                    $hs->ngay_sinh,
+                    $hs->sdt,
+                    $hs->email,
+                    $hs->dia_chi
+                ]);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    // 6. CHỨC NĂNG KẾT CHUYỂN NĂM HỌC
     public function ketChuyenNamHoc(Request $request)
     {
         $request->validate([
@@ -145,8 +191,7 @@ class HocSinhController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Lớp mới phải khác lớp cũ!'], 400);
         }
 
-        // Tìm tất cả học sinh đang ở lớp cũ và cập nhật sang lớp mới
-        $updatedCount = \App\Models\HocSinh::where('lop_hoc_id', $request->lop_cu_id)
+        $updatedCount = HocSinh::where('lop_hoc_id', $request->lop_cu_id)
             ->update(['lop_hoc_id' => $request->lop_moi_id]);
 
         return response()->json([

@@ -14,9 +14,14 @@ class GiaoVien extends Model {
         return $this->belongsTo(MonHoc::class, 'mon_hoc_id');
     }
     
-    // ĐÃ SỬA: Đổi tên hàm từ lopHocs() thành lop_hocs() cho khớp với Controller
+    // Thiết lập quan hệ: Giáo viên phụ trách những lớp nào
     public function lop_hocs() {
         return $this->belongsToMany(LopHoc::class, 'giao_vien_lop_hoc', 'giao_vien_id', 'lop_hoc_id')
                     ->withPivot('vai_tro');
+    }
+
+    // ✅ ĐÃ THÊM: Liên kết với bảng User để lấy tên đăng nhập hiển thị ra màn hình
+    public function user() {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

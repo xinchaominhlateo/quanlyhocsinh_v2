@@ -62,11 +62,49 @@ class HocPhiController extends Controller
         ]);
     }
 
+    // 3. THÊM MỚI: TẠO HỌC PHÍ CHO TOÀN LỚP
+    public function taoHocPhiTheoLop(Request $request)
+    {
+        $request->validate([
+            'lop_hoc_id' => 'required|exists:lop_hocs,id',
+            'thang_nam' => 'required|string', 
+            'so_tien' => 'required|numeric|min:0',
+        ]);
+
+        // Lấy toàn bộ học sinh thuộc lớp đó
+        $hocSinhs = HocSinh::where('lop_hoc_id', $request->lop_hoc_id)->get();
+
+        if ($hocSinhs->isEmpty()) {
+            return response()->json(['status' => 'error', 'message' => 'Lớp này hiện chưa có học sinh nào!'], 404);
+        }
+
+        // Vòng lặp tạo học phí cho từng em
+        foreach ($hocSinhs as $hs) {
+            HocPhi::updateOrCreate(
+                [
+                    'hoc_sinh_id' => $hs->id,
+                    'hoc_ki' => $request->thang_nam, // Dùng biến tháng/năm truyền từ React lưu vào cột hoc_ki
+                ],
+                [
+                    'so_tien' => $request->so_tien,
+                    'ngay_dong' => null, // Mặc định chưa thanh toán nên ngày đóng là null
+                    'trang_thai' => 'Chưa thanh toán',
+                    'noi_dung' => 'Thu học phí ' . $request->thang_nam
+                ]
+            );
+        }
+
+        return response()->json([
+            'status' => 'success', 
+            'message' => 'Đã áp dụng mức học phí ' . number_format($request->so_tien) . ' VNĐ cho ' . $hocSinhs->count() . ' học sinh!'
+        ]);
+    }
+
     public function show($id)
     {
         $hocPhi = HocPhi::with('hoc_sinh.lop_hoc')->find($id);
         return $hocPhi ? response()->json(['status' => 'success', 'data' => $hocPhi]) 
-                        : response()->json(['status' => 'error', 'message' => 'Không tìm thấy!'], 404);
+                       : response()->json(['status' => 'error', 'message' => 'Không tìm thấy!'], 404);
     }
 
     public function update(Request $request, $id)

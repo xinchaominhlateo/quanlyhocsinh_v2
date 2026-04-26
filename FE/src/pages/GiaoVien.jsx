@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+// ✅ ĐÃ THÊM: Import icon con mắt để BGH xem
+import { Eye } from 'lucide-react'; 
 
 const GiaoVien = () => {
   const [danhSachGV, setDanhSachGV] = useState([]);
   const [danhSachMon, setDanhSachMon] = useState([]);
   const [idDangSua, setIdDangSua] = useState(null);
   const [tuKhoa, setTuKhoa] = useState('');
+
+  // ✅ ĐÃ THÊM: Lấy role của user để phân quyền giao diện
+  const userRole = localStorage.getItem('userRole');
 
   // 1. THÊM GIOI_TINH VÀO STATE MẶC ĐỊNH
   const [form, setForm] = useState({ 
@@ -93,6 +98,23 @@ const GiaoVien = () => {
     });
   };
 
+  // ✅ ĐÃ THÊM: Hàm xem chi tiết cho Ban Giám Hiệu
+  const xemChiTiet = (gv) => {
+    Swal.fire({
+        title: `Hồ sơ: ${gv.ho_ten}`,
+        html: `
+          <div class="text-start">
+              <p><strong>Mã GV:</strong> ${gv.ma_giao_vien}</p>
+              <p><strong>Giới tính:</strong> ${gv.gioi_tinh}</p>
+              <p><strong>SĐT:</strong> ${gv.sdt}</p>
+              <p><strong>Email:</strong> ${gv.email}</p>
+              <p><strong>Chuyên môn:</strong> <span class="badge bg-warning text-dark">${gv.mon_hoc?.ten_mon || 'N/A'}</span></p>
+          </div>
+        `,
+        icon: 'info'
+    });
+  };
+
   const gvDaLoc = danhSachGV.filter(gv => 
     gv.ho_ten.toLowerCase().includes(tuKhoa.toLowerCase()) || 
     gv.ma_giao_vien?.toLowerCase().includes(tuKhoa.toLowerCase())
@@ -102,64 +124,67 @@ const GiaoVien = () => {
     <div className="container-fluid mb-5">
       <h2 className="text-primary fw-bold mb-4">👨‍🏫 QUẢN LÝ GIÁO VIÊN</h2>
       
-      <div className={`card shadow-sm mb-4 border-${idDangSua ? 'warning' : 'info'}`}>
-        <div className={`card-header text-white fw-bold bg-${idDangSua ? 'warning' : 'info'}`}>
-          {idDangSua ? '✏️ Đang sửa thông tin giáo viên' : '📝 Thêm giáo viên mới'}
+      {/* ✅ ĐÃ SỬA: ẨN TOÀN BỘ FORM NHẬP LIỆU NẾU LÀ BAN GIÁM HIỆU */}
+      {userRole !== 'bgh' && (
+        <div className={`card shadow-sm mb-4 border-${idDangSua ? 'warning' : 'info'}`}>
+          <div className={`card-header text-white fw-bold bg-${idDangSua ? 'warning' : 'info'}`}>
+            {idDangSua ? '✏️ Đang sửa thông tin giáo viên' : '📝 Thêm giáo viên mới'}
+          </div>
+          <div className="card-body">
+            <form onSubmit={handleLuu} className="row">
+              
+              {/* Hàng 1 */}
+              <div className="col-md-4 mb-3">
+                <label className="form-label fw-bold">Họ tên</label>
+                <input type="text" className="form-control" value={form.ho_ten} onChange={e => setForm({...form, ho_ten: e.target.value})} placeholder="Nhập họ và tên..." />
+              </div>
+              
+              {/* 2. KHU VỰC CHỌN GIỚI TÍNH */}
+              <div className="col-md-4 mb-3">
+                <label className="form-label fw-bold">Giới Tính</label>
+                <select className="form-select" value={form.gioi_tinh} onChange={e => setForm({...form, gioi_tinh: e.target.value})}>
+                  <option value="Nam">Nam</option>
+                  <option value="Nữ">Nữ</option>
+                </select>
+              </div>
+
+              <div className="col-md-4 mb-3">
+                <label className="form-label fw-bold text-danger">Số Điện Thoại</label>
+                <input 
+                  type="text" 
+                  className="form-control border-danger" 
+                  value={form.sdt} 
+                  maxLength={11}
+                  placeholder="Chỉ nhập số..."
+                  onInput={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
+                  onChange={e => setForm({...form, sdt: e.target.value})} 
+                />
+              </div>
+
+              {/* Hàng 2 */}
+              <div className="col-md-4 mb-3">
+                <label className="form-label fw-bold">Email</label>
+                <input type="email" className="form-control" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="email@vi-du.com" />
+              </div>
+              
+              <div className="col-md-4 mb-3">
+                <label className="form-label fw-bold">Môn dạy chuyên môn</label>
+                <select className="form-select" value={form.mon_hoc_id} onChange={e => setForm({...form, mon_hoc_id: e.target.value})}>
+                  <option value="">-- Chọn Môn --</option>
+                  {danhSachMon.map(m => <option key={m.id} value={m.id}>{m.ten_mon}</option>)}
+                </select>
+              </div>
+
+              <div className="col-md-4 d-flex align-items-end justify-content-end mb-3 gap-2">
+                <button type="submit" className={`btn fw-bold px-4 w-100 ${idDangSua ? 'btn-warning' : 'btn-info text-white'}`}>
+                  {idDangSua ? '💾 Cập Nhật' : '💾 Lưu Giáo Viên'}
+                </button>
+                {idDangSua && <button type="button" className="btn btn-secondary px-4" onClick={resetForm}>Hủy</button>}
+              </div>
+            </form>
+          </div>
         </div>
-        <div className="card-body">
-          <form onSubmit={handleLuu} className="row">
-            
-            {/* Hàng 1 */}
-            <div className="col-md-4 mb-3">
-              <label className="form-label fw-bold">Họ tên</label>
-              <input type="text" className="form-control" value={form.ho_ten} onChange={e => setForm({...form, ho_ten: e.target.value})} placeholder="Nhập họ và tên..." />
-            </div>
-            
-            {/* 2. KHU VỰC CHỌN GIỚI TÍNH */}
-            <div className="col-md-4 mb-3">
-              <label className="form-label fw-bold">Giới Tính</label>
-              <select className="form-select" value={form.gioi_tinh} onChange={e => setForm({...form, gioi_tinh: e.target.value})}>
-                <option value="Nam">Nam</option>
-                <option value="Nữ">Nữ</option>
-              </select>
-            </div>
-
-            <div className="col-md-4 mb-3">
-              <label className="form-label fw-bold text-danger">Số Điện Thoại</label>
-              <input 
-                type="text" 
-                className="form-control border-danger" 
-                value={form.sdt} 
-                maxLength={11}
-                placeholder="Chỉ nhập số..."
-                onInput={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
-                onChange={e => setForm({...form, sdt: e.target.value})} 
-              />
-            </div>
-
-            {/* Hàng 2 */}
-            <div className="col-md-4 mb-3">
-              <label className="form-label fw-bold">Email</label>
-              <input type="email" className="form-control" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="email@vi-du.com" />
-            </div>
-            
-            <div className="col-md-4 mb-3">
-              <label className="form-label fw-bold">Môn dạy chuyên môn</label>
-              <select className="form-select" value={form.mon_hoc_id} onChange={e => setForm({...form, mon_hoc_id: e.target.value})}>
-                <option value="">-- Chọn Môn --</option>
-                {danhSachMon.map(m => <option key={m.id} value={m.id}>{m.ten_mon}</option>)}
-              </select>
-            </div>
-
-            <div className="col-md-4 d-flex align-items-end justify-content-end mb-3 gap-2">
-              <button type="submit" className={`btn fw-bold px-4 w-100 ${idDangSua ? 'btn-warning' : 'btn-info text-white'}`}>
-                {idDangSua ? '💾 Cập Nhật' : '💾 Lưu Giáo Viên'}
-              </button>
-              {idDangSua && <button type="button" className="btn btn-secondary px-4" onClick={resetForm}>Hủy</button>}
-            </div>
-          </form>
-        </div>
-      </div>
+      )}
 
       <div className="mb-3">
         <input 
@@ -209,8 +234,17 @@ const GiaoVien = () => {
                       <span className="badge bg-warning text-dark p-2">{gv.mon_hoc?.ten_mon || 'N/A'}</span>
                     </td>
                     <td>
-                      <button className="btn btn-sm btn-outline-warning me-2 fw-bold" onClick={() => handleChonSua(gv)}>Sửa</button>
-                      <button className="btn btn-sm btn-outline-danger fw-bold" onClick={() => handleXoa(gv.id)}>Xóa</button>
+                      {/* ✅ ĐÃ SỬA: Nút xem chi tiết cho BGH, ẩn nút Sửa/Xóa */}
+                      {userRole === 'bgh' ? (
+                          <button className="btn btn-sm btn-outline-info fw-bold" onClick={() => xemChiTiet(gv)} title="Xem chi tiết">
+                              <Eye size={16} /> Xem
+                          </button>
+                      ) : (
+                          <>
+                            <button className="btn btn-sm btn-outline-warning me-2 fw-bold" onClick={() => handleChonSua(gv)}>Sửa</button>
+                            <button className="btn btn-sm btn-outline-danger fw-bold" onClick={() => handleXoa(gv.id)}>Xóa</button>
+                          </>
+                      )}
                     </td>
                   </tr>
                 ))

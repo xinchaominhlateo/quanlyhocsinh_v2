@@ -32,4 +32,16 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    // ✅ THÊM: Mối quan hệ kết nối tài khoản này với bảng Giáo Viên
+    public function giaoVien()
+    {
+        return $this->hasOne(GiaoVien::class, 'user_id');
+    }
+
+    // ✅ THÊM: Mối quan hệ kết nối tài khoản này với bảng Học Sinh
+    public function hocSinh()
+    {
+        return $this->hasOne(HocSinh::class, 'user_id');
+    }
 }
